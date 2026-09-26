@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSCAD Studio 3D — Ambiente CAD per OpenSees</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141519; --panel:#1c1e23; --panel2:#23262c; --line:#30333b; --line2:#3e424d;
+  --ink:#ece7db; --dim:#a8a294; --faint:#78736a;
+  --amber:#e8a33d; --teal:#4fb3a9; --red:#cf5a4c; --green:#7fa650;
+  --paper:#f2f0ea;
+  --mono:"IBM Plex Mono",monospace; --sans:"IBM Plex Sans",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font:13px/1.45 var(--sans);background:var(--bg);color:var(--ink);display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select,textarea{font:12px var(--mono);background:#15171b;border:1px solid var(--line2);color:var(--ink);border-radius:3px;padding:3px 6px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--amber)}
+label{color:var(--dim)}
+svg{display:block}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#3a3d46;border-radius:5px}::-webkit-scrollbar-track{background:transparent}
+
+#topbar{height:46px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{font:600 15px var(--mono);letter-spacing:.14em;display:flex;align-items:baseline;gap:7px}
+.brand b{color:var(--amber)}
+.brand small{font:400 10px var(--mono);color:var(--faint);letter-spacing:.08em}
+.tb-sep{width:1px;height:22px;background:var(--line2)}
+.tb-btn{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:4px;color:var(--dim);font-size:12px}
+.tb-btn:hover{background:var(--panel2);color:var(--ink)}
+.tb-btn.acc{background:var(--amber);color:#221a08;font-weight:600}
+.tb-btn.acc:hover{background:#f0b355;color:#221a08}
+.view-toggles{display:flex;gap:2px;margin-left:auto;align-items:center}
+.vt{padding:4px 8px;border-radius:4px;font:11px var(--mono);color:var(--faint);border:1px solid transparent}
+.vt.on{color:var(--amber);border-color:#5a4a26;background:#2a2519}
+#histBox{display:flex;gap:2px}
+
+#main{flex:1;display:flex;min-height:0}
+#tools{width:52px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:3px;overflow-y:auto}
+.tl-sep{width:26px;height:1px;background:var(--line2);margin:5px 0}
+.tool{width:38px;height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--dim);position:relative}
+.tool:hover{background:var(--panel2);color:var(--ink)}
+.tool.on{background:var(--amber);color:#221a08}
+.tool .kb{position:absolute;bottom:1px;right:3px;font:9px var(--mono);color:currentColor;opacity:.6}
+#center{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--paper);position:relative}
+#cv{flex:1;width:100%;display:block;cursor:crosshair;touch-action:none}
+#statusbar{height:28px;flex:none;display:flex;align-items:center;gap:8px;padding:0 10px;background:#e7e4db;border-top:1px solid #cfccc0;font:11px var(--mono);color:#6f6a5d}
+#statusbar .grow{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sb-chip{padding:1px 7px;border-radius:9px;border:1px solid #c4c0b2;color:#8a8577;cursor:pointer;user-select:none}
+.sb-chip.on{color:#5d4a1e;border-color:#b99a55;background:#efe3c6}
+.sb-sep{width:1px;height:14px;background:#c4c0b2}
+.sb-lab{color:#8a8577}
+#wpz{width:62px;padding:1px 4px;background:transparent;border:1px solid #c4c0b2;border-radius:3px;color:#57534a}
+.vp{padding:2px 7px;border-radius:4px;font:10.5px var(--mono);color:#8a8577;border:1px solid transparent}
+.vp:hover{color:#5d4a1e;border-color:#b99a55;background:#efe3c6}
+#statusXY{min-width:210px;text-align:right;color:#57534a}
+
+#side{width:308px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column}
+#tabbar{display:flex;flex:none;border-bottom:1px solid var(--line)}
+#tabbar button{flex:1;padding:9px 2px;font:11px var(--mono);letter-spacing:.04em;color:var(--faint);border-bottom:2px solid transparent}
+#tabbar button.on{color:var(--amber);border-bottom-color:var(--amber)}
+.tabc{flex:1;overflow-y:auto;padding:10px;display:none}
+.tabc.on{display:block}
+.empty{color:var(--faint);font-size:12px;padding:14px 6px;line-height:1.7}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:12px 0 6px}
+.sec-h:first-child{margin-top:0}
+.sec-h h4{font:600 11px var(--mono);letter-spacing:.1em;color:var(--dim)}
+.sec-h .act{font:11px var(--mono);color:var(--amber)}
+.sec-h .act:hover{text-decoration:underline}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:6px;margin-bottom:7px;overflow:hidden}
+.card-h{display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer}
+.card-h:hover{background:#282b32}
+.card-h .nm{font-weight:600;font-size:12.5px;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.card-h .knd{font:10px var(--mono);color:var(--faint)}
+.card-h .cnt{font:10px var(--mono);color:var(--faint)}
+.sw{width:13px;height:13px;border-radius:3px;flex:none;border:1px solid rgba(255,255,255,.18)}
+.card.open .card-b{display:block}
+.card-b{display:none;padding:8px 10px 10px;border-top:1px solid var(--line)}
+.frow{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.frow label{flex:0 0 88px;font-size:11.5px}
+.frow input,.frow select{flex:1;min-width:0}
+.frow input[type=color]{padding:0;height:24px;flex:0 0 40px}
+.badge{display:inline-flex;align-items:center;gap:4px;font:10px var(--mono);padding:2px 7px;border-radius:9px}
+.badge.ok{color:#9dc078;border:1px solid #4a5a34}
+.badge.warn{color:var(--amber);border:1px solid #5a4a26}
+.mini-btn{font:11px var(--mono);color:var(--dim);border:1px solid var(--line2);border-radius:4px;padding:3px 8px}
+.mini-btn:hover{color:var(--ink);border-color:var(--dim)}
+.mini-btn.danger:hover{color:#f0857a;border-color:#7a4038}
+.chk{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12px;color:var(--ink)}
+.chk input{width:auto}
+.chk .cnt{color:var(--faint);font:10px var(--mono);margin-left:auto}
+.radio-act{color:var(--faint);font:10px var(--mono);border:1px solid var(--line2);padding:2px 7px;border-radius:9px}
+.radio-act.on{color:#221a08;background:var(--amber);border-color:var(--amber)}
+.note{font-size:11px;color:var(--faint);line-height:1.6;padding:6px 2px}
+.note b{color:var(--dim)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:8px 2px 2px;border-top:1px solid var(--line);margin-top:10px}
+.legend span{display:flex;align-items:center;gap:5px;font:10px var(--mono);color:var(--dim)}
+.lg-fix{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #b5533c}
+.lg-load{width:0;height:0;border-top:8px solid #3e7c74;border-left:5px solid transparent;border-right:5px solid transparent}
+.lg-mass{width:9px;height:9px;border:2px dashed #6b5fa8;border-radius:50%}
+.lg-ifc{width:9px;height:9px;border:2px solid #b0872f;border-radius:50%}
+
+#bottom{height:196px;flex:none;display:flex;border-top:1px solid var(--line);background:var(--panel);min-height:0}
+#leftbot{width:340px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line)}
+#leftbot header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px 5px}
+#leftbot h4{font:600 11px var(--mono);letter-spacing:.12em;color:var(--dim)}
+#stagebar{flex:1;overflow-y:auto;padding:2px 12px 10px}
+.stage-chip{width:100%;text-align:left;display:flex;align-items:center;gap:9px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;margin-bottom:5px;background:var(--panel2)}
+.stage-chip:hover{border-color:var(--line2)}
+.stage-chip.on{border-color:var(--amber);background:#2b2517}
+.stage-chip .n{font:600 10px var(--mono);color:var(--faint);width:24px}
+.stage-chip.on .n{color:var(--amber)}
+.stage-chip .nm{font-weight:600;font-size:12.5px;flex:1}
+.stage-chip .md{font:10px var(--mono);color:var(--faint)}
+#rightbot{flex:1;display:flex;flex-direction:column;min-width:0}
+#rightbot header{display:flex;align-items:center;gap:8px;padding:7px 12px 5px}
+#rightbot h4{font:600 11px var(--mono);letter-spacing:.12em;color:var(--dim);flex:1}
+#consBody{flex:1;overflow-y:auto;padding:2px 12px 10px;font:11px var(--mono);line-height:1.55}
+.cl{white-space:pre-wrap;word-break:break-all}
+.cl.info{color:var(--teal)}
+.cl.warn{color:var(--amber)}
+.cl.hdr{color:var(--faint)}
+
+#pop{position:fixed;display:none;z-index:50;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.5);padding:12px;width:240px;max-height:80vh;overflow-y:auto}
+#pop h5{font:600 11px var(--mono);letter-spacing:.08em;color:var(--amber);margin-bottom:9px}
+#pop .frow label{flex:0 0 74px}
+#pop .btnrow{display:flex;gap:6px;justify-content:flex-end;margin-top:9px}
+#pop .btnrow button{font:12px var(--sans);padding:4px 12px;border-radius:4px}
+#popOk{background:var(--amber);color:#221a08;font-weight:600}
+#popNo{color:var(--dim)}
+#modalWrap{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(8,9,12,.62)}
+#modalBox{background:var(--panel);border:1px solid var(--line2);border-radius:10px;width:min(780px,92vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+#modalBox header{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line)}
+#modalBox header h3{font:600 13px var(--mono);letter-spacing:.1em;color:var(--amber);flex:1}
+#modalBody{padding:14px 16px;overflow-y:auto}
+#modalFoot{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.mbtn{padding:6px 14px;border-radius:5px;font-size:12.5px;border:1px solid var(--line2);color:var(--dim)}
+.mbtn:hover{color:var(--ink)}
+.mbtn.acc{background:var(--amber);border-color:var(--amber);color:#221a08;font-weight:600}
+#tclOut{width:100%;height:46vh;background:#101114;color:#cfd8c2;font:11.5px var(--mono);border:1px solid var(--line2);border-radius:6px;padding:10px;resize:vertical}
+#toast{position:fixed;right:16px;bottom:210px;z-index:70;background:#26241d;border:1px solid #5a4a26;color:var(--amber);font-size:12.5px;padding:9px 14px;border-radius:7px;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;max-width:340px}
+#toast.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand"><b>OS</b>CAD<small>STUDIO 3D · OPENSEES</small></div>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btnNew">Nuovo</button>
+  <button class="tb-btn" id="btnOpen">Apri .json</button>
+  <button class="tb-btn" id="btnFit">Inquadra</button>
+  <button class="tb-btn" id="btnRenumber" title="Rinumera i nodi per livelli di quota (z, poi y, poi x)">Rinumera nodi</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn acc" id="btnScript">Script Tcl</button>
+  <button class="tb-btn" id="btnExport">Scarica .tcl</button>
+  <div class="view-toggles">
+    <button class="vt on" id="tgNodes">N: nodi</button>
+    <button class="vt on" id="tgElems">E: elementi</button>
+    <button class="vt on" id="tgSym">Simboli</button>
+    <select id="selColorBy" title="Colora per"><option value="group">Colore: gruppo fisico</option><option value="mat">Colore: materiale</option></select>
+    <div class="tb-sep"></div>
+    <div id="histBox">
+      <button class="tb-btn" id="btnUndo" title="Annulla (Ctrl+Z)">↶</button>
+      <button class="tb-btn" id="btnRedo" title="Ripristina (Ctrl+Y)">↷</button>
+    </div>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btnHelp">Guida</button>
+  </div>
+</header>
+
+<div id="main">
+  <aside id="tools"></aside>
+  <div id="center">
+    <canvas id="cv"></canvas>
+    <div id="statusbar">
+      <span id="statusHint" class="grow"></span>
+      <span class="sb-chip on" id="tgGrid">griglia</span>
+      <span class="sb-chip on" id="tgSnap">snap</span>
+      <span class="sb-chip" id="tgOrtho">orto</span>
+      <span class="sb-sep"></span>
+      <span class="sb-lab">piano z</span><input id="wpz" type="number" step="any" value="0">
+      <span class="sb-sep"></span>
+      <button class="vp" data-vw="iso">ISO</button>
+      <button class="vp" data-vw="top">TOP</button>
+      <button class="vp" data-vw="front">FRONT</button>
+      <button class="vp" data-vw="lato">LATO</button>
+      <span id="statusXY">x 0.000&nbsp;&nbsp;y 0.000&nbsp;&nbsp;z 0.000</span>
+    </div>
+  </div>
+  <aside id="side">
+    <nav id="tabbar">
+      <button data-tab="tabSel" class="on">SEL</button>
+      <button data-tab="tabGroups">GRUPPI</button>
+      <button data-tab="tabMats">MATERIALI</button>
+      <button data-tab="tabStage">FASE</button>
+      <button data-tab="tabParams">PARAM.</button>
+    </nav>
+    <div class="tabc on" id="tabSel"></div>
+    <div class="tabc" id="tabGroups"></div>
+    <div class="tabc" id="tabMats"></div>
+    <div class="tabc" id="tabStage"></div>
+    <div class="tabc" id="tabParams"></div>
+  </aside>
+</div>
+
+<footer id="bottom">
+  <div id="leftbot">
+    <header><h4>FASI · UPDATE MODEL</h4><button class="tb-btn" id="btnAddStage" style="padding:2px 6px">+ fase</button></header>
+    <div id="stagebar"></div>
+  </div>
+  <div id="rightbot">
+    <header><h4>CONSOLE TCL · REGISTRATORE COMANDI</h4>
+      <button class="tb-btn" id="btnCopyTcl" style="padding:2px 6px">copia script</button>
+      <button class="tb-btn" id="btnClearLog" style="padding:2px 6px">pulisci</button>
+    </header>
+    <div id="consBody"></div>
+  </div>
+</footer>
+
+<div id="pop"></div>
+<div id="modalWrap"><div id="modalBox"><header><h3 id="modalTitle"></h3><button class="tb-btn" id="modalX">✕</button></header><div id="modalBody"></div><div id="modalFoot"></div></div></div>
+<div id="toast"></div>
+<input type="file" id="fileInput" accept=".json" style="display:none">
+
+<script>
+'use strict';
+/* ================= utilità ================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const uid=(()=>{let i=0;return()=>'x'+(++i)})();
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const num=v=>{const s=(Math.round(v*1e6)/1e6).toString();return s==='-0'?'0':s};
+const fx=(v,d=3)=>(+v).toFixed(d);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ================= icone ================= */
+const I={
+select:'<path d="M5 3l6.5 15 2-6.2 6.2-2z" fill="currentColor" stroke="none"/>',
+node:'<circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/><path d="M12 2.5v5.5M12 16v5.5M2.5 12H8M16 12h5.5"/>',
+beam:'<circle cx="4.5" cy="18.5" r="2" fill="currentColor" stroke="none"/><circle cx="19.5" cy="5.5" r="2" fill="currentColor" stroke="none"/><path d="M6.2 16.8L17.8 7.2"/>',
+poly:'<path d="M3 20l6-12 6 7 6-11"/><circle cx="3" cy="20" r="1.8" fill="currentColor" stroke="none"/><circle cx="9" cy="8" r="1.8" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.8" fill="currentColor" stroke="none"/><circle cx="21" cy="4" r="1.8" fill="currentColor" stroke="none"/>',
+quad:'<path d="M4.5 19L6 5.5l13.5 1.7-2 12.3z"/><circle cx="4.5" cy="19" r="1.7" fill="currentColor" stroke="none"/><circle cx="6" cy="5.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="19.5" cy="7.2" r="1.7" fill="currentColor" stroke="none"/><circle cx="17.5" cy="19.5" r="1.7" fill="currentColor" stroke="none"/>',
+cube:'<path d="M12 2.8l8.2 4.4v9.6L12 21.2 3.8 16.8V7.2z"/><path d="M3.8 7.2L12 11.6l8.2-4.4M12 11.6v9.6"/>',
+interface:'<path d="M2.5 12H7M17 12h4.5"/><path d="M7 12c1.6-4.5 3.7 4.5 5 0s3.4 4.5 5 0"/>',
+fix:'<path d="M12 5.5l6 10.5H6z"/><path d="M4 20h16M8 20l-1.6 2M12 20l-1.6 2M16 20l-1.6 2"/>',
+mass:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>',
+load:'<path d="M12 3v11M7.5 9.5L12 14.5l4.5-5"/><path d="M5.5 20h13"/>',
+move:'<path d="M12 2.5v19M2.5 12h19M12 2.5L9.6 4.9M12 2.5l2.4 2.4M12 21.5l-2.4-2.4M12 21.5l2.4-2.4M2.5 12l2.4-2.4M2.5 12l2.4 2.4M21.5 12l-2.4-2.4M21.5 12l-2.4 2.4"/>',
+copy:'<rect x="8.5" y="8.5" width="12" height="12" rx="1.5"/><path d="M15.5 3.5H3.5v12"/>',
+rotate:'<path d="M20 12a8 8 0 1 1-2.9-6.2"/><path d="M20.5 2.8v4.4h-4.4"/>'};
+const ic=n=>`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${I[n]||''}</svg>`;
+
+/* ================= stato ================= */
+const App={nodes:[],elems:[],groups:[],mats:[],stages:[],params:[],T:{node:0,ele:0,mat:0,par:0}};
+let activeGroupId=null, curStage=0;
+let selNodes=new Set(), selElems=new Set();
+let tool='select', pend=[], op=null, hover={n:null,e:null};
+let snapGridOn=true, snapNodeOn=true, orthoOn=false;
+let showNodeTags=true, showElemTags=true, showSymbols=true, colorBy='group';
+const wp={z:0};                        // quota del piano di lavoro
+const cam={th:-0.785,ph:0.615,dist:16,tgt:{x:2.5,y:1.5,z:1.2},fov:40*Math.PI/180};
+let B=null, Fpx=500, tw=null;          // base camera, focale, tween vista
+const G={step:1};                      // passo griglia corrente
+const mouse={sx:0,sy:0,inside:false};
+
+const nodeById=id=>App.nodes.find(n=>n.id===id);
+const groupById=id=>App.groups.find(g=>g.id===id);
+const matByTag=t=>App.mats.find(m=>m.tag==t);
+const curStageObj=()=>App.stages[curStage];
+const nodesOf=e=>e.nodes.map(nodeById).filter(Boolean);
+const matOf=e=>{ if(e.mat){const m=matByTag(e.mat); if(m)return m;} const g=groupById(e.group); return g&&matByTag(g.props.mat); };
+
+const PALETTE=['#e8a33d','#4fb3a9','#d96aa7','#7fa650','#c67b5c','#8e9cd9','#d6c05a','#5bc0be','#e07a5f','#9ba65d','#b48cd9','#6da7c4'];
+const MATPALETTE=['#3e7c74','#a6603c','#6e6fa8','#8a7f3d','#b0533f','#4c7f56'];
+let palIdx=0, matIdx=0;
+const nextColor=()=>PALETTE[(palIdx++)%PALETTE.length];
+
+function addGroupRaw(name,kind,props,color){
+  const g={id:uid(),name,kind,color:color||nextColor(),
+    props:Object.assign(kindProps(kind),props||{}),fade:1,fadeT:1};
+  App.groups.push(g);
+  App.stages.forEach(s=>s.activeGroups[g.id]=true);
+  return g;
+}
+function kindProps(kind){
+  if(kind==='beam')return{A:0.00764,E:210000,G:81000,J:2.1e-5,Iy:5.56e-5,Iz:1.85e-4,transf:'Linear'};
+  if(kind==='truss')return{A:0.01,mat:''};
+  if(kind==='shell')return{t:0.25,E:30000,G:13000};
+  if(kind==='brick')return{mat:''};
+  if(kind==='interface')return{mat:'',dirs:[1,2,3]};
+  return{};
+}
+function addMatRaw(name,type,params,color){
+  const m={tag:++App.T.mat,name,type,color:color||MATPALETTE[(matIdx++)%MATPALETTE.length],params};
+  App.mats.push(m); return m;
+}
+const isUniaxial=t=>['Elastic','ElasticPP','Steel01','Concrete01'].includes(t);
+const isNd=t=>t==='ElasticIsotropic';
+function defaultSolver(){return{constraints:'Plain',numberer:'RCM',system:'BandGeneral',algorithm:'Newton',test:'NormDispIncr',testTol:1e-6,testIter:6,integrator:'LoadControl',incr:0.1,dcNode:1,dcDof:1,dcIncr:0.01,alS:1,alIncr:0.01,gamma:0.5,beta:0.25,alpha:0.1,dt:0.01}}
+function addStage(name){
+  const prev=App.stages[App.stages.length-1];
+  const ag={}; App.groups.forEach(g=>ag[g.id]=prev?(prev.activeGroups[g.id]!==false):true);
+  const s={id:uid(),name:name||('Fase '+(App.stages.length+1)),mode:'static',steps:10,eigenN:5,
+    exc:{on:false,dir:1,series:'Constant',factor:9.81,file:'',dt:0.01,tStart:0,period:1,shift:0},
+    solver:defaultSolver(),activeGroups:ag,matStage:{},updParams:{},loads:[],recNodes:true,recEles:true,custom:''};
+  App.stages.push(s); return s;
+}
+
+/* ================= undo ================= */
+let undoStack=[],redoStack=[];
+const snapshot=()=>JSON.stringify({nodes:App.nodes,elems:App.elems,groups:App.groups,mats:App.mats,stages:App.stages,params:App.params,T:App.T,activeGroupId,curStage});
+function commit(snap){ if(!snap)return; undoStack.push(snap); if(undoStack.length>60)undoStack.shift(); redoStack=[]; syncHist(); }
+function doUndo(){ if(!undoStack.length)return toast('Niente da annullare'); redoStack.push(snapshot()); apply(undoStack.pop()); toast('Annullato'); }
+function doRedo(){ if(!redoStack.length)return toast('Niente da ripristinare'); undoStack.push(snapshot()); apply(redoStack.pop()); toast('Ripristinato'); }
+function apply(s){ const o=JSON.parse(s);
+  ['nodes','elems','groups','mats','stages','params'].forEach(k=>App[k]=o[k]); App.T=o.T;
+  activeGroupId=o.activeGroupId; curStage=clamp(o.curStage,0,App.stages.length-1);
+  selNodes.clear(); selElems.clear(); pend=[]; op=null;
+  updateFades(true); renderAll(); log('# stato ripristinato','info'); }
+function syncHist(){ $('#btnUndo').style.opacity=undoStack.length?1:.35; $('#btnRedo').style.opacity=redoStack.length?1:.35; }
+
+/* ================= console ================= */
+function log(msg,cls='cmd'){ const b=$('#consBody'); const d=document.createElement('div'); d.className='cl '+cls; d.textContent=msg; b.appendChild(d);
+  while(b.children.length>400)b.removeChild(b.firstChild); b.scrollTop=b.scrollHeight; }
+ $('#btnClearLog').onclick=()=>{$('#consBody').innerHTML=''};
+
+/* ================= camera & proiezione 3D ================= */
+const cv=$('#cv'), ctx=cv.getContext('2d');
+let dpr=1;
+function resize(){ const r=cv.parentElement.getBoundingClientRect(); const sb=$('#statusbar').offsetHeight;
+  dpr=window.devicePixelRatio||1;
+  cv.style.width=r.width+'px'; cv.style.height=(r.height-sb)+'px';
+  cv.width=Math.round(r.width*dpr); cv.height=Math.round((r.height-sb)*dpr);
+  Fpx=(cv.height/dpr)/2/Math.tan(cam.fov/2); }
+new ResizeObserver(resize).observe($('#center'));
+
+function refreshBasis(){
+  const cp=Math.cos(cam.ph), sp=Math.sin(cam.ph), ct=Math.cos(cam.th), st=Math.sin(cam.th);
+  const eye={x:cam.tgt.x+cam.dist*cp*ct, y:cam.tgt.y+cam.dist*cp*st, z:cam.tgt.z+cam.dist*sp};
+  let fxv=cam.tgt.x-eye.x, fyv=cam.tgt.y-eye.y, fzv=cam.tgt.z-eye.z;
+  const fl=Math.hypot(fxv,fyv,fzv)||1; fxv/=fl;fyv/=fl;fzv/=fl;
+  let rx=fyv, ry=-fxv, rz=0;                       // r = f × (0,0,1)
+  const rl=Math.hypot(rx,ry,rz);
+  if(rl<1e-6){rx=1;ry=0;rz=0;} else {rx/=rl;ry/=rl;rz/=rl;}
+  const ux=ry*fzv-rz*fyv, uy=rz*fxv-rx*fzv, uz=rx*fyv-ry*fxv;  // u = r × f
+  B={eye,f:{x:fxv,y:fyv,z:fzv},r:{x:rx,y:ry,z:rz},u:{x:ux,y:uy,z:uz}};
+}
+function projOf(p){
+  const dx=p.x-B.eye.x, dy=p.y-B.eye.y, dz=p.z-B.eye.z;
+  const zc=dx*B.f.x+dy*B.f.y+dz*B.f.z;
+  if(zc<0.05)return null;
+  const W=cv.width/dpr, H=cv.height/dpr;
+  const xc=dx*B.r.x+dy*B.r.y+dz*B.r.z, yc=dx*B.u.x+dy*B.u.y+dz*B.u.z;
+  return {x:W/2+xc/zc*Fpx, y:H/2-yc/zc*Fpx, z:zc};
+}
+function rayDir(sx,sy){
+  const W=cv.width/dpr, H=cv.height/dpr;
+  const px=(sx-W/2)/Fpx, py=(H/2-sy)/Fpx;
+  let dx=B.f.x+B.r.x*px+B.u.x*py, dy=B.f.y+B.r.y*px+B.u.y*py, dz=B.f.z+B.r.z*px+B.u.z*py;
+  const l=Math.hypot(dx,dy,dz)||1; return {x:dx/l,y:dy/l,z:dz/l};
+}
+function planePoint(sx,sy,z){ z=(z===undefined)?wp.z:z;
+  const d=rayDir(sx,sy); if(Math.abs(d.z)<1e-5)return null;
+  const t=(z-B.eye.z)/d.z; if(t<=0)return null;
+  return {x:B.eye.x+d.x*t, y:B.eye.y+d.y*t, z}; }
+
+function tweenView(to,ms=380){ tw={t0:performance.now(),ms,f:{th:cam.th,ph:cam.ph,d:cam.dist,t:{...cam.tgt}},o:to}; }
+function stepTween(now){ if(!tw)return;
+  const k=clamp((now-tw.t0)/tw.ms,0,1), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+  const L=(a,b)=>a+(b-a)*e;
+  cam.th=L(tw.f.th,tw.o.th); cam.ph=L(tw.f.ph,clamp(tw.o.ph,-1.553,1.553));
+  cam.dist=L(tw.f.d,tw.o.d);
+  cam.tgt.x=L(tw.f.t.x,tw.o.tgt.x); cam.tgt.y=L(tw.f.t.y,tw.o.tgt.y); cam.tgt.z=L(tw.f.t.z,tw.o.tgt.z);
+  if(k>=1)tw=null; }
+const VIEWS={iso:{th:-0.785,ph:0.615},top:{th:-Math.PI/2,ph:1.5533},front:{th:-Math.PI/2,ph:0.0001},lato:{th:Math.PI,ph:0.0001}};
+function fitView(){ if(!App.nodes.length){cam.tgt={x:0,y:0,z:1};cam.dist=12;wp.z=0;syncWp();return;}
+  let x0=1e9,y0=1e9,z0=1e9,x1=-1e9,y1=-1e9,z1=-1e9;
+  App.nodes.forEach(n=>{x0=Math.min(x0,n.x);x1=Math.max(x1,n.x);y0=Math.min(y0,n.y);y1=Math.max(y1,n.y);z0=Math.min(z0,n.z);z1=Math.max(z1,n.z)});
+  cam.tgt={x:(x0+x1)/2,y:(y0+y1)/2,z:(z0+z1)/2};
+  cam.dist=clamp(Math.max(x1-x0,y1-y0,z1-z0,1)*1.9,2,5000);
+  wp.z=Math.round(z0*1e6)/1e6; syncWp(); }
+function syncWp(){ const el=$('#wpz'); if(el)el.value=num(wp.z); }
+
+/* ================= hit test & snap ================= */
+function distSeg2D(px,py,ax,ay,bx,by){ const dx=bx-ax,dy=by-ay; const L2=dx*dx+dy*dy;
+  let t=L2?((px-ax)*dx+(py-ay)*dy)/L2:0; t=clamp(t,0,1);
+  return Math.hypot(px-(ax+t*dx),py-(ay+t*dy)); }
+function polyIn(x,y,pts){ let ins=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))ins=true; } return ins; }
+function pickNode(sx,sy,rad=9){ let best=null,bd=rad;
+  App.nodes.forEach(n=>{const pr=projOf(n); if(!pr)return; const d=Math.hypot(pr.x-sx,pr.y-sy); if(d<bd){bd=d;best=n}}); return best; }
+const BFACES=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
+const BEDGES=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+function edgePairs(e){ if(e.type==='brick')return BEDGES;
+  if(e.type==='shell')return [[0,1],[1,2],[2,3],[3,0]];
+  return [[0,1]]; }
+function pickElem(sx,sy){
+  const cands=[];
+  App.elems.forEach(e=>{ const ns=nodesOf(e); if(ns.length<2)return;
+    const prs=ns.map(projOf); if(prs.some(p=>!p))return;
+    if(e.type==='brick'&&BFACES.some(f=>polyIn(sx,sy,f.map(i=>prs[i])))){
+      cands.push({e,zc:Math.min(...prs.map(p=>p.z))}); return; }
+    if(e.type==='shell'&&polyIn(sx,sy,prs)){
+      cands.push({e,zc:Math.min(...prs.map(p=>p.z))}); return; }
+    let d=1e9;
+    edgePairs(e).forEach(([i,j])=>{ d=Math.min(d,distSeg2D(sx,sy,prs[i].x,prs[i].y,prs[j].x,prs[j].y)); });
+    if(d<9)cands.push({e,zc:Math.min(...prs.map(p=>p.z)),d});
+  });
+  if(!cands.length)return null;
+  const ins=cands.filter(c=>c.d===undefined);
+  if(ins.length)return ins.sort((a,b)=>a.zc-b.zc)[0].e;
+  return cands.sort((a,b)=>a.d-b.d)[0].e;
+}
+function snapPt(sx,sy){
+  if(snapNodeOn){ const n=pickNode(sx,sy,9); if(n)return{x:n.x,y:n.y,z:n.z,node:n,kind:'node'}; }
+  const q=planePoint(sx,sy); if(!q)return null;
+  let x=q.x,y=q.y;
+  const ref=pend.length?pend[pend.length-1]:((op&&(op.base||op.c))||null);
+  if(orthoOn&&ref){ if(Math.abs(x-ref.x)>=Math.abs(y-ref.y))y=ref.y; else x=ref.x; }
+  if(snapGridOn){ const s=G.step; x=Math.round(x/s)*s; y=Math.round(y/s)*s; }
+  return{x,y,z:wp.z,kind:snapGridOn?'grid':'free'};
+}
+
+/* ================= creazione entità & comandi Tcl ================= */
+function addNode(x,y,z,gid,quiet){ const n={id:uid(),tag:++App.T.node,x,y,z,group:gid||null,fix:null,mass:null};
+  App.nodes.push(n); if(!quiet)log(`node ${n.tag} ${num(x)} ${num(y)} ${num(z)};`); return n; }
+
+const TRBASE={Linear:1,PDelta:3,Corotational:5};
+function beamTT(e){ const ns=nodesOf(e); if(ns.length<2)return 1;
+  const g=groupById(e.group); const ty=(g&&g.props.transf)||'Linear';
+  const dx=ns[1].x-ns[0].x, dy=ns[1].y-ns[0].y, dz=ns[1].z-ns[0].z;
+  const L=Math.hypot(dx,dy,dz)||1; const v=Math.abs(dz/L)>0.999?1:0;  // membro verticale
+  return TRBASE[ty]+v; }
+function shellSecTag(e){ const i=App.groups.findIndex(g=>g.id===e.group); return 100+i+1; }
+function elemCmd(e){
+  const ns=nodesOf(e); if(ns.length<2)return '  # elemento '+e.tag+' incompleto';
+  const g=groupById(e.group), p=g?g.props:{};
+  const tags=ns.map(n=>n.tag).join(' ');
+  if(e.type==='beam')return `element elasticBeamColumn ${e.tag} ${tags} ${num(p.A||0.01)} ${num(p.E||210000)} ${num(p.G||81000)} ${num(p.J||1e-5)} ${num(p.Iy||1e-4)} ${num(p.Iz||1e-4)} ${beamTT(e)};`;
+  if(e.type==='truss')return `element truss ${e.tag} ${tags} ${num(p.A||0.01)} ${e.mat||p.mat||1};`;
+  if(e.type==='shell')return `element shellMITC4 ${e.tag} ${tags} ${shellSecTag(e)};`;
+  if(e.type==='brick')return `element stdBrick ${e.tag} ${tags} ${e.mat||p.mat||1};`;
+  if(e.type==='interface'){ const ds=(p.dirs&&p.dirs.length)?p.dirs:[1,2,3];
+    const m=e.mat||p.mat||1;
+    return `element zeroLength ${e.tag} ${tags} -mat ${ds.map(()=>m).join(' ')} -dir ${ds.join(' ')};`; }
+  return '# elemento '+e.tag;
+}
+function addElem(type,nids,gid,extra,quiet){ const e={id:uid(),tag:++App.T.ele,type,nodes:nids,group:gid||null,mat:null};
+  if(extra)Object.assign(e,extra); App.elems.push(e);
+  if(!quiet){ log('# '+({beam:'trave 3D elasticBeamColumn',truss:'truss',shell:'shellMITC4',brick:'stdBrick',interface:'zeroLength (interfaccia)'}[type]||type)+' E'+e.tag+' → gruppo "'+(groupById(gid)||{}).name+'"','info');
+    log(elemCmd(e)); }
+  return e; }
+
+function groupCheck(g){
+  if(!g)return['nessun gruppo attivo'];
+  const miss=[];
+  if(g.kind==='beam'){ ['A','E','G','J','Iy','Iz'].forEach(k=>{ if(!(g.props[k]>0))miss.push(k); }); }
+  if(g.kind==='truss'){ if(!(g.props.A>0))miss.push('A'); if(!matByTag(g.props.mat))miss.push('materiale'); }
+  if(g.kind==='shell'){ if(!(g.props.t>0))miss.push('spessore'); if(!(g.props.E>0))miss.push('E'); if(!(g.props.G>0))miss.push('G'); }
+  if(g.kind==='brick'){ if(!matByTag(g.props.mat))miss.push('nDMaterial 3D'); }
+  if(g.kind==='interface'){ if(!matByTag(g.props.mat))miss.push('materiale uniaxial'); if(!(g.props.dirs||[]).length)miss.push('DOF'); }
+  return miss;
+}
+
+/* ================= interazioni pointer ================= */
+const HINTS={
+select:'Tasto destro: orbita · rotella: zoom · Maiusc+destro / centrale: pan · clic: seleziona · trascina i nodi selezionati sul piano di lavoro',
+node:'Clicca per creare un nodo sul piano di lavoro (quota z nel campo «piano z», tasti , e .)',
+beam:'Due clic sul piano: trave 3D. Per un membro verticale cambia la quota del piano e riparti dallo stesso nodo (snap attivo)',
+poly:'Punti successivi sul piano · INVIO o doppio clic termina · clic sul primo nodo chiude il contorno',
+shell:'Quattro clic sul piano di lavoro: elemento shellMITC4 (vertici normalizzati antiorari)',
+box:'Trascina un rettangolo sul piano: maglia di brick 3D (o di shell) con suddivisioni X/Y/Z e altezza',
+interface:'Clicca il nodo di partenza e conferma con un secondo clic: coppia di nodi coincidenti + zeroLength',
+fix:'Clicca un nodo per assegnare i vincoli (6 DOF)',
+mass:'Clicca un nodo per assegnare la massa (6 componenti)',
+load:'Clicca un nodo: il carico (Fx…Mz) viene associato alla fase corrente',
+move:'Seleziona, punto base, punto di arrivo · PagSu/PagGiù prima del secondo clic = Δz',
+copy:'Seleziona, punto base, punto di copia · PagSu/PagGiù prima del secondo clic = Δz',
+rotate:'Seleziona, clic sul centro, poi muovi: rotazione attorno all\'asse Z · clic conferma'};
+function setTool(t){ tool=t; pend=[]; ghostClear(); op=null;
+  $$('#tools .tool').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  $('#statusHint').textContent=HINTS[t]||''; }
+function ghostClear(){}
+function selSet(){ return selNodes.size+selElems.size; }
+function moveTargets(){ const ids=new Set(selNodes);
+  selElems.forEach(eid=>{const e=App.elems.find(x=>x.id===eid); if(e)e.nodes.forEach(nid=>ids.add(nid))});
+  return [...ids].map(nodeById).filter(Boolean); }
+
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  const r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
+  refreshBasis(); tw=null;
+  if(e.button===1||(e.button===2&&e.shiftKey)){ op={kind:'pan',sx:e.clientX,sy:e.clientY,t:{...cam.tgt}}; return; }
+  if(e.button===2){ op={kind:'orbit',sx:e.clientX,sy:e.clientY,th:cam.th,ph:cam.ph}; return; }
+  if(e.button!==0)return;
+  switch(tool){
+  case 'select':{
+    const hn=pickNode(sx,sy);
+    if(hn){ if(!e.shiftKey){selNodes.clear();selElems.clear();} selNodes.add(hn.id); renderSelPanel();
+      const p0=planePoint(sx,sy)||{x:hn.x,y:hn.y,z:wp.z};
+      op={kind:'dragNodes',p0,orig:moveTargets().map(n=>({n,x:n.x,y:n.y,z:n.z})),moved:false}; break; }
+    const he=pickElem(sx,sy);
+    if(he){ if(!e.shiftKey){selNodes.clear();selElems.clear();} selElems.add(he.id); renderSelPanel();
+      const p0=planePoint(sx,sy)||{x:0,y:0,z:wp.z};
+      op={kind:'dragNodes',p0,orig:moveTargets().map(n=>({n,x:n.x,y:n.y,z:n.z})),moved:false}; break; }
+    if(!e.shiftKey){selNodes.clear();selElems.clear();renderSelPanel();}
+    op={kind:'band',ax:sx,ay:sy,bx:sx,by:sy}; break; }
+  case 'node':{ const s=snapPt(sx,sy); if(!s||s.node)break;
+    commit(snapshot()); addNode(s.x,s.y,s.z,activeGroupId); renderCounts(); break; }
+  case 'beam': case 'poly': case 'shell':{
+    const g=groupById(activeGroupId);
+    if(!g){toast('Crea o seleziona prima un gruppo fisico (pannello GRUPPI)');break;}
+    const s=snapPt(sx,sy);
+    if(!s){toast('Piano di lavoro di profilo: cambia vista o quota z');break;}
+    if(pend.length&&s.node&&s.node.id===pend[pend.length-1].nid)break;
+    if(tool==='poly'&&pend.length>=3&&s.node&&s.node.id===pend[0].nid){finishPoly(true);break;}
+    if(tool==='shell'&&pend.length>=3&&s.node&&s.node.id===pend[0].nid)break;
+    if(!s.node)commit(snapshot());
+    const nid=s.node?s.node.id:addNode(s.x,s.y,s.z,g.id).id;
+    if(tool==='beam'&&pend.length===1){ commit(snapshot());
+      addElem('beam',[pend[0].nid,nid],g.id); pend=[]; renderCounts(); break; }
+    pend.push({x:s.x,y:s.y,z:s.z,nid});
+    if(tool==='shell'&&pend.length===4){ commit(snapshot());
+      let pts=pend.slice(); let A2=0;
+      for(let i=0;i<4;i++){const a=pts[i],b=pts[(i+1)%4];A2+=a.x*b.y-b.x*a.y;}
+      if(A2<0)pts=pts.reverse();                       // ordine antiorario visto da +Z
+      addElem('shell',pts.map(p=>p.nid),g.id); pend=[]; renderCounts(); }
+    break; }
+  case 'box':{ const s=snapPt(sx,sy); if(!s)break; op={kind:'box',a:s}; break; }
+  case 'interface':{
+    const g=groupById(activeGroupId);
+    if(!g||g.kind!=='interface'){toast('Attiva un gruppo di tipo "Interfaccia" nel pannello GRUPPI');break;}
+    if(op&&op.kind==='iface'){ commit(op.snap);
+      const nj=addNode(op.ni.x,op.ni.y,op.ni.z,g.id);
+      addElem('interface',[op.ni.id,nj.id],g.id); op=null; renderCounts(); break; }
+    const s=snapPt(sx,sy); if(!s)break;
+    let ni;
+    if(s.node)ni=s.node; else {commit(snapshot()); ni=addNode(s.x,s.y,s.z,g.id);}
+    op={kind:'iface',ni,snap:snapshot()}; break; }
+  case 'fix': case 'mass': case 'load':{
+    const hn=pickNode(sx,sy); if(!hn){toast('Clicca su un nodo esistente');break;}
+    if(tool==='load')commit(snapshot());
+    openNodePopup(hn,tool,e.clientX,e.clientY); break; }
+  case 'move': case 'copy':{
+    if(op&&op.kind==='ghost2'){
+      const dx=op.cur.x-op.base.x, dy=op.cur.y-op.base.y, dz=op.dz||0;
+      commit(op.snap);
+      if(op.mode==='move'){ op.orig.forEach(o=>{o.n.x=o.x+dx;o.n.y=o.y+dy;o.n.z=o.z+dz;});
+        log('# selezione spostata di ('+num(dx)+', '+num(dy)+', '+num(dz)+')','info'); }
+      else copySel(dx,dy,dz);
+      op=null; renderSelPanel(); renderCounts(); break; }
+    if(!selSet()){toast('Seleziona prima nodi o elementi (V)');break;}
+    const s=snapPt(sx,sy); if(!s)break;
+    const orig=new Map(); moveTargets().forEach(n=>orig.set(n.id,{x:n.x,y:n.y,z:n.z}));
+    op={kind:'ghost2',mode:tool,base:s,cur:s,dz:0,orig,snap:snapshot()}; break; }
+  case 'rotate':{
+    if(op&&op.kind==='rot'){ commit(op.snap); op=null; renderCounts(); break; }
+    if(!selSet()){toast('Seleziona prima nodi o elementi (V)');break;}
+    const s=snapPt(sx,sy); if(!s)break;
+    const orig=new Map(); moveTargets().forEach(n=>orig.set(n.id,{x:n.x,y:n.y,z:n.z}));
+    op={kind:'rot',c:s,ang:0,orig,snap:snapshot()}; break; }
+  }
+});
+
+cv.addEventListener('pointermove',e=>{
+  const r=cv.getBoundingClientRect(); mouse.sx=e.clientX-r.left; mouse.sy=e.clientY-r.top; mouse.inside=true;
+  refreshBasis();
+  if(op){ switch(op.kind){
+    case 'orbit': cam.th=op.th-(e.clientX-op.sx)*0.008;
+      cam.ph=clamp(op.ph-(e.clientY-op.sy)*0.006,-1.553,1.553); return;
+    case 'pan':{ const k=cam.dist/Fpx, dx=e.clientX-op.sx, dy=e.clientY-op.sy;
+      cam.tgt.x=op.t.x+(-dx*B.r.x+dy*B.u.x)*k;
+      cam.tgt.y=op.t.y+(-dx*B.r.y+dy*B.u.y)*k;
+      cam.tgt.z=op.t.z+(-dx*B.r.z+dy*B.u.z)*k; return; }
+    case 'dragNodes':{ const q=planePoint(mouse.sx,mouse.sy); if(!q)break;
+      let dx=q.x-op.p0.x, dy=q.y-op.p0.y;
+      if(snapGridOn){ dx=Math.round(dx/G.step)*G.step; dy=Math.round(dy/G.step)*G.step; }
+      if(dx||dy){ if(!op.moved){commit(snapshot());op.moved=true;}
+        op.orig.forEach(o=>{ o.n.x=o.x+dx; o.n.y=o.y+dy; }); }
+      return; }
+    case 'band': op.bx=mouse.sx; op.by=mouse.sy; return;
+    case 'box': op.b=snapPt(mouse.sx,mouse.sy)||op.b; return;
+    case 'iface': op.cur=snapPt(mouse.sx,mouse.sy); return;
+    case 'ghost2': op.cur=snapPt(mouse.sx,mouse.sy)||op.cur; return;
+    case 'rot':{ const q=planePoint(mouse.sx,mouse.sy);
+      if(q)op.ang=Math.atan2(q.y-op.c.y,q.x-op.c.x);
+      applyRot(op); return; }
+  }}
+  else { hover.n=pickNode(mouse.sx,mouse.sy); hover.e=hover.n?null:pickElem(mouse.sx,mouse.sy); }
+});
+function applyRot(o){ const c=Math.cos(o.ang),s=Math.sin(o.ang);
+  o.orig.forEach(rec=>{ const x=rec.x-o.c.x, y=rec.y-o.c.y;
+    rec.n.x=o.c.x+x*c-y*s; rec.n.y=o.c.y+x*s+y*c; }); }
+function rotPt(n,c,ang){ const co=Math.cos(ang),si=Math.sin(ang);
+  const x=n.x-c.x, y=n.y-c.y;
+  return {x:c.x+x*co-y*si, y:c.y+x*si+y*co, z:n.z}; }
+
+cv.addEventListener('pointerup',e=>{
+  if(!op)return;
+  const r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
+  switch(op.kind){
+    case 'orbit': case 'pan': op=null; return;
+    case 'dragNodes': if(op.moved)renderSelPanel(); op=null; return;
+    case 'band':{ const x0=Math.min(op.ax,op.bx),x1=Math.max(op.ax,op.bx),y0=Math.min(op.ay,op.by),y1=Math.max(op.ay,op.by);
+      if((x1-x0)*(y1-y0)>25){
+        App.nodes.forEach(n=>{const pr=projOf(n); if(pr&&pr.x>=x0&&pr.x<=x1&&pr.y>=y0&&pr.y<=y1)selNodes.add(n.id);});
+        App.elems.forEach(el=>{ const ns=nodesOf(el); if(!ns.length)return;
+          const prs=ns.map(projOf); if(prs.some(p=>!p))return;
+          if(prs.every(p=>p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1))selElems.add(el.id); });
+        renderSelPanel(); }
+      op=null; return; }
+    case 'box':{ const a=op.a, b=snapPt(sx,sy); op=null;
+      if(!b)return;
+      const pa=projOf(a), pb=projOf(b); if(!pa||!pb)return;
+      if(Math.hypot(pb.x-pa.x,pb.y-pa.y)<16)return;
+      openBoxModal(a,b); return; }
+    default: return;   // iface / ghost2 / rot: si chiudono col clic sinistro successivo
+  }
+});
+cv.addEventListener('pointerleave',()=>mouse.inside=false);
+cv.addEventListener('dblclick',()=>{ if(tool==='poly')finishPoly(false); });
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{ e.preventDefault(); refreshBasis();
+  const r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
+  const q=planePoint(sx,sy);
+  const f=Math.exp(e.deltaY*0.0012), d2=clamp(cam.dist*f,0.3,5000);
+  if(q){ const k=1-d2/cam.dist;
+    cam.tgt.x+=(q.x-cam.tgt.x)*k; cam.tgt.y+=(q.y-cam.tgt.y)*k; cam.tgt.z+=(q.z-cam.tgt.z)*k; }
+  cam.dist=d2; },{passive:false});
+
+function finishPoly(closed){ if(pend.length<2)return; commit(snapshot());
+  const g=groupById(activeGroupId), m=pend.length, n=closed?m:m-1;
+  for(let i=0;i<n;i++)addElem('beam',[pend[i].nid,pend[(i+1)%m].nid],g?g.id:null,null,true);
+  log('# polilinea: '+n+' travi create','info'); pend=[]; renderCounts(); }
+function copySel(dx,dy,dz){ const map=new Map();
+  moveTargets().forEach(n=>{ const c=addNode(n.x+dx,n.y+dy,n.z+dz,n.group,true);
+    map.set(n.id,c); log(`node ${c.tag} ${num(c.x)} ${num(c.y)} ${num(c.z)};`); });
+  const es=[...selElems].map(id=>App.elems.find(e=>e.id===id)).filter(Boolean);
+  selNodes.clear(); selElems.clear();
+  es.forEach(e=>{ const nid=e.nodes.filter(id=>map.has(id));
+    const need=e.type==='brick'?8:(e.type==='shell'?4:2);
+    if(nid.length<need)return;
+    const ne=addElem(e.type,nid,e.group,null,true); selElems.add(ne.id); log(elemCmd(ne)); });
+  map.forEach(c=>selNodes.add(c.id)); }
+
+/* ================= popup nodo (fix / massa / carico, 6 DOF) ================= */
+function closePop(){ $('#pop').style.display='none'; }
+function openNodePopup(n,mode,cx,cy){
+  const p=$('#pop'); const st=curStageObj();
+  const DOF=['ux','uy','uz','rx','ry','rz'];
+  let html='';
+  if(mode==='fix'){ const f=n.fix||[0,0,0,0,0,0];
+    html=`<h5>VINCOLI · nodo ${n.tag}</h5>`+
+      DOF.map((l,i)=>`<div class="frow"><label>${l}</label><select data-i="${i}"><option value="0" ${!f[i]?'selected':''}>Libero</option><option value="1" ${f[i]?'selected':''}>Bloccato</option></select></div>`).join('')+
+      `<div class="btnrow"><button id="popNo">Annulla</button><button id="popOk">Applica</button></div>`;
+    p.innerHTML=html;
+    $('#popOk').onclick=()=>{ commit(snapshot());
+      const v=[0,1,2,3,4,5].map(i=>+p.querySelector(`select[data-i="${i}"]`).value);
+      n.fix=v.some(x=>x)?v:null;
+      log(n.fix?`fix ${n.tag} ${v.join(' ')};`:`# nodo ${n.tag}: vincoli rimossi`);
+      closePop(); renderSelPanel(); };
+  }
+  else if(mode==='mass'){ const m=n.mass||[0,0,0,0,0,0];
+    const lb=['m x','m y','m z','I x','I y','I z'];
+    html=`<h5>MASSA · nodo ${n.tag}</h5>`+
+      lb.map((l,i)=>`<div class="frow"><label>${l}</label><input data-i="${i}" type="number" step="any" value="${m[i]}"></div>`).join('')+
+      `<div class="btnrow"><button id="popNo">Annulla</button><button id="popOk">Applica</button></div>`;
+    p.innerHTML=html;
+    $('#popOk').onclick=()=>{ commit(snapshot());
+      const v=[0,1,2,3,4,5].map(i=>+p.querySelector(`input[data-i="${i}"]`).value||0);
+      n.mass=v.some(x=>x)?v:null;
+      log(n.mass?`mass ${n.tag} ${v.map(num).join(' ')};`:`# nodo ${n.tag}: massa rimossa`);
+      closePop(); renderSelPanel(); };
+  }
+  else { html=`<h5>CARICO · nodo ${n.tag} → fase "${esc(st.name)}"</h5>`+
+      ['Fx','Fy','Fz','Mx','My','Mz'].map((l,i)=>`<div class="frow"><label>${l}</label><input data-i="${i}" type="number" step="any" value="0"></div>`).join('')+
+      `<div class="btnrow"><button id="popNo">Annulla</button><button id="popOk">Applica</button></div>`;
+    p.innerHTML=html;
+    $('#popOk').onclick=()=>{ const v=[0,1,2,3,4,5].map(i=>+p.querySelector(`input[data-i="${i}"]`).value||0);
+      if(v.some(x=>x)){ st.loads.push({node:n.id,fx:v[0],fy:v[1],fz:v[2],mx:v[3],my:v[4],mz:v[5]});
+        log(`# fase "${st.name}": pattern Plain → load ${n.tag} ${v.map(num).join(' ')};`); renderStagePanel(); }
+      closePop(); };
+  }
+  p.style.display='block';
+  const rc=p.getBoundingClientRect();
+  p.style.left=clamp(cx+12,8,innerWidth-rc.width-8)+'px';
+  p.style.top=clamp(cy+10,8,innerHeight-rc.height-8)+'px';
+  $('#popNo').onclick=closePop;
+}
+document.addEventListener('pointerdown',e=>{ const p=$('#pop');
+  if(p.style.display==='block'&&!p.contains(e.target)&&e.target.closest&&(!e.target.closest('#cv')))closePop(); },true);
+
+/* ================= modali ================= */
+function openModal(title,bodyHTML,buttons){
+  $('#modalTitle').textContent=title; $('#modalBody').innerHTML=bodyHTML;
+  const f=$('#modalFoot'); f.innerHTML='';
+  buttons.forEach(b=>{ const btn=document.createElement('button'); btn.className='mbtn'+(b.acc?' acc':''); btn.textContent=b.t;
+    btn.onclick=()=>{ if(b.fn&&b.fn()===false)return; if(b.close!==false)$('#modalWrap').style.display='none'; }; f.appendChild(btn); });
+  $('#modalWrap').style.display='flex'; }
+ $('#modalX').onclick=()=>$('#modalWrap').style.display='none';
+ $('#modalWrap').addEventListener('pointerdown',e=>{ if(e.target.id==='modalWrap')$('#modalWrap').style.display='none'; });
+
+function openBoxModal(a,b){
+  const g=groupById(activeGroupId);
+  openModal('Maglia 3D di brick / shell',
+    `<p class="note" style="padding:0 0 10px">Rettangolo (${num(Math.min(a.x,b.x))}, ${num(Math.min(a.y,b.y))}) → (${num(Math.max(a.x,b.x))}, ${num(Math.max(a.y,b.y))}) sul piano z = ${num(wp.z)}. I nodi sono numerati per livelli di quota (k, poi y, poi x), come le convenzioni di maglia OpenSees.</p>
+     <div class="frow"><label>Suddiv. X</label><input id="bx" type="number" min="1" value="2"></div>
+     <div class="frow"><label>Suddiv. Y</label><input id="by" type="number" min="1" value="2"></div>
+     <div class="frow"><label>Suddiv. Z</label><input id="bz" type="number" min="1" value="1"></div>
+     <div class="frow"><label>Altezza H</label><input id="bh" type="number" step="any" value="1"></div>
+     <div class="frow"><label>Tipo</label><select id="bk"><option value="brick">brick 3D — stdBrick</option><option value="shell">shell piano — shellMITC4</option></select></div>
+     <div class="frow"><label>Gruppo</label><select id="bg">${App.groups.map(x=>`<option value="${x.id}" ${g&&x.id===g.id?'selected':''}>${esc(x.name)} (${x.kind})</option>`).join('')}</select></div>`,
+    [{t:'Annulla'},{t:'Genera maglia',acc:true,fn:()=>{
+      const nx=clamp(+$('#bx').value||1,1,40), ny=clamp(+$('#by').value||1,1,40), nz=clamp(+$('#bz').value||1,1,40);
+      const H=+$('#bh').value||1, kind=$('#bk').value, gg=groupById($('#bg').value);
+      if(kind==='shell'&&(!gg||gg.kind!=='shell')){toast('Serve un gruppo di tipo shell (con spessore, E, G)');return false;}
+      if(kind==='brick'&&(!gg||gg.kind!=='brick')){toast('Serve un gruppo di tipo brick (con nDMaterial)');return false;}
+      if(groupCheck(gg).length){toast('Gruppo incompleto: '+groupCheck(gg).join(', '));return false;}
+      commit(snapshot()); buildGrid3D(a,b,nx,ny,nz,H,gg,kind); renderCounts(); }}]);
+}
+function buildGrid3D(a,b,nx,ny,nz,H,gg,kind){
+  const x0=Math.min(a.x,b.x),x1=Math.max(a.x,b.x),y0=Math.min(a.y,b.y),y1=Math.max(a.y,b.y),z0=a.z??wp.z;
+  if(kind==='shell')nz=0;
+  const dx=(x1-x0)/nx, dy=(y1-y0)/ny, dz=nz?H/nz:0;
+  const ids=[];
+  for(let k=0;k<=nz;k++)for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)
+    ids.push(addNode(x0+i*dx,y0+j*dy,z0+k*dz,gg.id,true).id);
+  const idx=(i,j,k)=>ids[k*(nx+1)*(ny+1)+j*(nx+1)+i];
+  let c=0;
+  if(kind==='brick'){
+    for(let k=0;k<nz;k++)for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+      addElem('brick',[idx(i,j,k),idx(i+1,j,k),idx(i+1,j+1,k),idx(i,j+1,k),
+                       idx(i,j,k+1),idx(i+1,j,k+1),idx(i+1,j+1,k+1),idx(i,j+1,k+1)],gg.id,null,true); c++; }
+  } else {
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+      addElem('shell',[idx(i,j,0),idx(i+1,j,0),idx(i+1,j+1,0),idx(i,j+1,0)],gg.id,null,true); c++; }
+  }
+  log(`# maglia ${nx}×${ny}×${nz||'piano'} su gruppo "${gg.name}" — ${ids.length} nodi, ${c} ${kind==='brick'?'stdBrick':'shellMITC4'}`,'info');
+}
+
+/* ================= disegno 3D ================= */
+function draw(){
+  const W=cv.width/dpr, H=cv.height/dpr;
+  Fpx=(H/2)/Math.tan(cam.fov/2);
+  refreshBasis();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#f2f0ea'; ctx.fillRect(0,0,W,H);
+  drawGrid(W,H);
+  drawAxes();
+  const prims=[];
+  const st=curStageObj();
+  App.groups.forEach(g=>{ const a=g.fade; if(a<0.01)return;
+    const inc=groupCheck(g).length>0;
+    App.elems.forEach(e=>{ if(e.group!==g.id)return;
+      const ns=nodesOf(e); if(!ns.length)return;
+      const prs=ns.map(projOf); if(prs.some(p=>!p))return;
+      const col=colorBy==='mat'?((matOf(e)||g).color):g.color;
+      const sel=selElems.has(e.id), hov=hover.e===e.id;
+      const zAvg=prs.reduce((s,p)=>s+p.z,0)/prs.length;
+      if(e.type==='beam'||e.type==='truss'){
+        prims.push({k:'l',a:prs[0],b:prs[1],c:sel?'#b57614':col,w:sel?3.6:(hov?3:2),al:a,ds:inc?[6,4]:null,z:(prs[0].z+prs[1].z)/2});
+      } else if(e.type==='shell'){
+        prims.push({k:'f',pts:prs,c:col,al:(sel?0.26:0.18)*a,z:zAvg});
+        [[0,1],[1,2],[2,3],[3,0]].forEach(([i,j])=>prims.push({k:'l',a:prs[i],b:prs[j],c:sel?'#b57614':col,w:sel?2.8:1.8,al:a,ds:inc?[6,4]:null,z:(prs[i].z+prs[j].z)/2}));
+      } else if(e.type==='brick'){
+        BFACES.forEach(f=>{ const fp=f.map(i=>prs[i]);
+          prims.push({k:'f',pts:fp,c:col,al:(sel?0.16:0.10)*a,z:fp.reduce((s,p)=>s+p.z,0)/fp.length}); });
+        BEDGES.forEach(([i,j])=>prims.push({k:'l',a:prs[i],b:prs[j],c:sel?'#b57614':col,w:sel?2.8:1.6,al:a,ds:inc?[6,4]:null,z:(prs[i].z+prs[j].z)/2}));
+      } else if(e.type==='interface'){
+        prims.push({k:'c',p:prs[0],c:sel?'#b57614':col,w:2,al:a,z:prs[0].z});
+      }
+    });
+  });
+  prims.sort((p,q)=>q.z-p.z);          // pittore: da dietro a davanti
+  prims.forEach(p=>{ ctx.globalAlpha=p.al??1;
+    if(p.k==='l'){ ctx.strokeStyle=p.c; ctx.lineWidth=p.w; ctx.setLineDash(p.ds||[]);
+      ctx.beginPath(); ctx.moveTo(p.a.x,p.a.y); ctx.lineTo(p.b.x,p.b.y); ctx.stroke(); ctx.setLineDash([]); }
+    else if(p.k==='f'){ ctx.fillStyle=p.c; ctx.beginPath(); ctx.moveTo(p.pts[0].x,p.pts[0].y);
+      for(let i=1;i<p.pts.length;i++)ctx.lineTo(p.pts[i].x,p.pts[i].y);
+      ctx.closePath(); ctx.fill(); }
+    else if(p.k==='c'){ ctx.strokeStyle=p.c; ctx.lineWidth=p.w;
+      ctx.beginPath(); ctx.arc(p.p.x,p.p.y,11,0,7); ctx.stroke();
+      ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.p.x,p.p.y,2.6,0,7); ctx.fill(); }
+  });
+  ctx.globalAlpha=1;
+  if(showSymbols)drawSymbols();
+  if(st)st.loads.forEach(Ld=>{const n=nodeById(Ld.node); if(n)drawLoadArrow(n,Ld);});
+  // nodi (sempre in primo piano, stile CAD)
+  App.nodes.forEach(n=>{ const g=groupById(n.group); const pr=projOf(n); if(!pr)return;
+    const a=g?g.fade:0.9; if(a<0.02)return;
+    ctx.globalAlpha=a; ctx.fillStyle=g?g.color:'#8a8577';
+    ctx.beginPath(); ctx.arc(pr.x,pr.y,3.4,0,7); ctx.fill(); ctx.globalAlpha=1;
+    if(selNodes.has(n.id)){ ctx.strokeStyle='#b57614'; ctx.lineWidth=1.6; ctx.strokeRect(pr.x-6.5,pr.y-6.5,13,13); }
+    else if(hover.n===n.id){ ctx.strokeStyle='#8a8577'; ctx.lineWidth=1.3; ctx.strokeRect(pr.x-6,pr.y-6,12,12); }
+  });
+  ctx.font='10px "IBM Plex Mono"'; ctx.textBaseline='alphabetic';
+  if(showNodeTags)App.nodes.forEach(n=>{ const pr=projOf(n); if(!pr)return;
+    ctx.fillStyle='#8b8578'; ctx.fillText('N'+n.tag,pr.x+6,pr.y-6); });
+  if(showElemTags)App.elems.forEach(e=>{ const ns=nodesOf(e); if(!ns.length)return;
+    const c={x:0,y:0,z:0}; ns.forEach(n=>{c.x+=n.x;c.y+=n.y;c.z+=n.z});
+    const pr=projOf({x:c.x/ns.length,y:c.y/ns.length,z:c.z/ns.length}); if(!pr)return;
+    ctx.fillStyle='#a09a8a'; ctx.fillText('E'+e.tag,pr.x+5,pr.y+12); });
+  // ordine vertici 1→n sugli elementi superficie/volume selezionati
+  App.elems.forEach(e=>{ if(!(e.type==='shell'||e.type==='brick')||!selElems.has(e.id))return;
+    nodesOf(e).forEach((n,i)=>{ const pr=projOf(n); if(!pr)return;
+      ctx.fillStyle='#e8a33d'; ctx.beginPath(); ctx.arc(pr.x,pr.y,8,0,7); ctx.fill();
+      ctx.fillStyle='#221a08'; ctx.textAlign='center'; ctx.fillText(i+1,pr.x,pr.y+3.5); ctx.textAlign='left'; }); });
+  drawGhost();
+  if(op&&op.kind==='band'){
+    const x0=Math.min(op.ax,op.bx),y0=Math.min(op.ay,op.by),w=Math.abs(op.bx-op.ax),h=Math.abs(op.by-op.ay);
+    ctx.fillStyle='rgba(232,163,61,.08)'; ctx.strokeStyle='#c98d2e'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    ctx.fillRect(x0,y0,w,h); ctx.strokeRect(x0,y0,w,h); ctx.setLineDash([]); }
+  if(mouse.inside){ // mirino + coordinate
+    ctx.strokeStyle='rgba(120,115,106,.55)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(mouse.sx-8,mouse.sy); ctx.lineTo(mouse.sx+8,mouse.sy);
+    ctx.moveTo(mouse.sx,mouse.sy-8); ctx.lineTo(mouse.sx,mouse.sy+8); ctx.stroke();
+    const hn=hover.n?nodeById(hover.n):null;
+    const q=hn||planePoint(mouse.sx,mouse.sy);
+    $('#statusXY').textContent=q?('x '+fx(q.x)+'  y '+fx(q.y)+'  z '+fx(q.z)):'—'; }
+}
+function drawGrid(W,H){
+  const ppm=Fpx/Math.max(cam.dist,0.5);
+  const cand=[0.001,0.002,0.005,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000];
+  let step=cand.find(s=>s*ppm>=16)||1000;
+  const corners=[[10,20],[W-10,20],[10,H-30],[W-10,H-30],[W/2,H/2],[W/2,20],[W/2,H-30],[10,H/2],[W-10,H/2]];
+  const xs=[],ys=[];
+  corners.forEach(([sx,sy])=>{const q=planePoint(sx,sy); if(q){xs.push(q.x);ys.push(q.y);}});
+  if(xs.length<2){G.step=step;return;}
+  let x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  while((x1-x0)/step>260||((x1-x0)/step)*((y1-y0)/step)>52000)step*=2;
+  G.step=step;
+  const maj=step*5;
+  ctx.lineWidth=1;
+  for(let x=Math.ceil(x0/step)*step;x<=x1+step*1e-6;x+=step){
+    const A=projOf({x,y:y0,z:wp.z}), Bp=projOf({x,y:y1,z:wp.z}); if(!A||!Bp)continue;
+    ctx.strokeStyle=Math.abs(x/maj-Math.round(x/maj))<1e-6?'#ccc8ba':'#e3e0d7';
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(Bp.x,Bp.y); ctx.stroke(); }
+  for(let y=Math.ceil(y0/step)*step;y<=y1+step*1e-6;y+=step){
+    const A=projOf({x:x0,y,z:wp.z}), Bp=projOf({x:x1,y,z:wp.z}); if(!A||!Bp)continue;
+    ctx.strokeStyle=Math.abs(y/maj-Math.round(y/maj))<1e-6?'#ccc8ba':'#e3e0d7';
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(Bp.x,Bp.y); ctx.stroke(); }
+}
+function drawAxes(){
+  const L=Math.max(G.step*3,0.001);
+  [[[L,0,0],'#b5533c','X'],[[0,L,0],'#5d8a46','Y'],[[0,0,L],'#3e7c74','Z']].forEach(([v,c,lb])=>{
+    const pa=projOf({x:0,y:0,z:0}), pb=projOf({x:v[0],y:v[1],z:v[2]}); if(!pa||!pb)return;
+    ctx.strokeStyle=c; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+    ctx.fillStyle=c; ctx.font='11px "IBM Plex Mono"'; ctx.fillText(lb,pb.x+3,pb.y-3); });
+}
+function drawSymbols(){
+  App.nodes.forEach(n=>{ const pr=projOf(n); if(!pr)return;
+    if(n.fix){ const full=n.fix.slice(0,3).every(v=>v);
+      ctx.beginPath(); ctx.moveTo(pr.x,pr.y+4); ctx.lineTo(pr.x-7,pr.y+17); ctx.lineTo(pr.x+7,pr.y+17); ctx.closePath();
+      if(full){ ctx.fillStyle='#b5533c'; ctx.fill(); }
+      else { ctx.strokeStyle='#b5533c'; ctx.lineWidth=1.4; ctx.stroke(); }
+      ctx.strokeStyle='#b5533c'; ctx.beginPath(); ctx.moveTo(pr.x-9,pr.y+19); ctx.lineTo(pr.x+9,pr.y+19); ctx.stroke(); }
+    if(n.mass){ ctx.strokeStyle='#6b5fa8'; ctx.lineWidth=1.4; ctx.setLineDash([3,2]);
+      ctx.beginPath(); ctx.arc(pr.x,pr.y,10,0,7); ctx.stroke(); ctx.setLineDash([]); } });
+  App.elems.filter(e=>e.type==='interface').forEach(e=>{ const ns=nodesOf(e); if(!ns.length)return;
+    const pr=projOf(ns[0]); if(!pr)return; const g=groupById(e.group);
+    ctx.strokeStyle=g?g.color:'#b0872f'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(pr.x,pr.y,13,0,7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(pr.x,pr.y,5,0,7); ctx.stroke(); });
+}
+function drawLoadArrow(n,Ld){
+  const pr=projOf(n); if(!pr)return;
+  const m=Math.hypot(Ld.fx,Ld.fy,Ld.fz);
+  if(m>0){ const eps=cam.dist*0.004;
+    const pr2=projOf({x:n.x+Ld.fx/m*eps, y:n.y+Ld.fy/m*eps, z:n.z+Ld.fz/m*eps});
+    let dx=0, dy=-1;
+    if(pr2){ dx=pr2.x-pr.x; dy=pr2.y-pr.y; const l=Math.hypot(dx,dy); if(l>0.5){dx/=l;dy/=l;} else {dx=0;dy=-1;} }
+    const tx=pr.x-dx*30, ty=pr.y-dy*30;
+    ctx.strokeStyle='#3e7c74'; ctx.fillStyle='#3e7c74'; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(pr.x,pr.y); ctx.stroke();
+    const a=Math.atan2(dy,dx);
+    ctx.beginPath(); ctx.moveTo(pr.x,pr.y);
+    ctx.lineTo(pr.x-Math.cos(a-0.42)*9, pr.y-Math.sin(a-0.42)*9);
+    ctx.lineTo(pr.x-Math.cos(a+0.42)*9, pr.y-Math.sin(a+0.42)*9); ctx.closePath(); ctx.fill();
+    ctx.font='9.5px "IBM Plex Mono"';
+    ctx.fillText(`F(${num(Ld.fx)}, ${num(Ld.fy)}, ${num(Ld.fz)})`,tx-12,ty-6); }
+  if(Ld.mx||Ld.my||Ld.mz){ ctx.strokeStyle='#8a5fa8'; ctx.fillStyle='#8a5fa8'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(pr.x,pr.y-20,8,0.5,5.4); ctx.stroke();
+    ctx.font='9.5px "IBM Plex Mono"';
+    ctx.fillText(`M(${num(Ld.mx)},${num(Ld.my)},${num(Ld.mz)})`,pr.x+10,pr.y-24); }
+}
+function drawGhost(){
+  const S=mouse.inside?snapPt(mouse.sx,mouse.sy):null;
+  ctx.strokeStyle='#e8a33d'; ctx.fillStyle='rgba(232,163,61,.6)'; ctx.lineWidth=1.6; ctx.setLineDash([6,4]);
+  if(pend.length){
+    ctx.beginPath();
+    const p0=projOf(pend[0]); if(p0)ctx.moveTo(p0.x,p0.y);
+    for(let i=1;i<pend.length;i++){ const q=projOf(pend[i]); if(q)ctx.lineTo(q.x,q.y); }
+    if(S){ const q=projOf(S); if(q)ctx.lineTo(q.x,q.y); }
+    ctx.stroke();
+    pend.forEach(p=>{ const q=projOf(p); if(!q)return;
+      ctx.setLineDash([]); ctx.beginPath(); ctx.arc(q.x,q.y,3,0,7); ctx.fill(); ctx.setLineDash([6,4]); });
+    if(tool==='shell'&&pend.length>=3&&S){ const q=projOf(S);
+      if(q&&p0){ ctx.beginPath(); ctx.moveTo(p0.x,p0.y);
+        for(let i=1;i<pend.length;i++){const p=projOf(pend[i]); ctx.lineTo(p.x,p.y);}
+        ctx.lineTo(q.x,q.y); ctx.closePath();
+        ctx.fillStyle='rgba(232,163,61,.12)'; ctx.fill(); } }
+  }
+  if(op&&op.kind==='iface'){
+    const a=projOf(op.ni), b=op.cur?projOf(op.cur):null;
+    if(a&&b){ ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    if(a){ ctx.beginPath(); ctx.arc(a.x,a.y,8,0,7); ctx.stroke(); } }
+  if(op&&op.kind==='box'&&op.b){
+    const a=op.a, b=op.b;
+    const P=[[a.x,a.y],[b.x,a.y],[b.x,b.y],[a.x,b.y]].map(([x,y])=>projOf({x,y,z:wp.z}));
+    if(P.every(Boolean)){ ctx.beginPath(); ctx.moveTo(P[0].x,P[0].y);
+      P.slice(1).forEach(p=>ctx.lineTo(p.x,p.y)); ctx.closePath();
+      ctx.fillStyle='rgba(232,163,61,.10)'; ctx.fill(); ctx.stroke(); } }
+  if(op&&op.kind==='ghost2'){
+    const dx=op.cur.x-op.base.x, dy=op.cur.y-op.base.y, dz=op.dz||0;
+    ctx.strokeStyle='rgba(181,118,20,.9)';
+    App.elems.forEach(e=>{ if(!selElems.has(e.id))return;
+      const prs=nodesOf(e).map(n=>projOf({x:n.x+dx,y:n.y+dy,z:n.z+dz}));
+      if(prs.some(p=>!p))return;
+      ctx.beginPath(); ctx.moveTo(prs[0].x,prs[0].y);
+      for(let i=1;i<prs.length;i++)ctx.lineTo(prs[i].x,prs[i].y);
+      if(e.type==='shell'||e.type==='brick')ctx.closePath();
+      ctx.stroke(); });
+    moveTargets().forEach(n=>{ const pr=projOf({x:n.x+dx,y:n.y+dy,z:n.z+dz}); if(!pr)return;
+      ctx.strokeRect(pr.x-4,pr.y-4,8,8); });
+    const lp=projOf({x:op.cur.x,y:op.cur.y,z:wp.z+dz});
+    if(lp){ ctx.font='10px "IBM Plex Mono"'; ctx.setLineDash([]);
+      ctx.fillText(`Δ (${num(dx)}, ${num(dy)}, ${num(dz)})`,lp.x+10,lp.y-8); } }
+  if(op&&op.kind==='rot'){
+    const c=projOf(op.c);
+    if(c){ ctx.beginPath(); ctx.arc(c.x,c.y,26,0,7); ctx.stroke();
+      ctx.font='11px "IBM Plex Mono"'; ctx.setLineDash([]);
+      ctx.fillText('θ = '+fx(op.ang*180/Math.PI,1)+'°',c.x+32,c.y-30); }
+    ctx.strokeStyle='rgba(181,118,20,.9)';
+    App.elems.forEach(e=>{ if(!selElems.has(e.id))return;
+      const prs=nodesOf(e).map(n=>projOf(rotPt(n,op.c,op.ang)));
+      if(prs.some(p=>!p))return;
+      ctx.beginPath(); ctx.moveTo(prs[0].x,prs[0].y);
+      prs.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+      if(e.type==='shell'||e.type==='brick')ctx.closePath();
+      ctx.stroke(); }); }
+  ctx.setLineDash([]);
+  if(S&&S.kind==='node'){ const q=projOf(S);
+    if(q){ ctx.strokeStyle='#e8a33d'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.arc(q.x,q.y,8,0,7); ctx.stroke();
+      ctx.font='9.5px "IBM Plex Mono"'; ctx.fillStyle='#a5721f';
+      ctx.fillText('nodo '+S.node.tag,q.x+11,q.y-9); } }
+}
+function updateFades(instant){ const st=curStageObj(); if(!st)return;
+  App.groups.forEach(g=>{ g.fadeT=(st.activeGroups[g.id]===false)?0.1:1; if(instant)g.fade=g.fadeT; }); }
+(function loop(now){ if(tw)stepTween(now);
+  App.groups.forEach(g=>{ g.fade+=(g.fadeT-g.fade)*0.14; }); draw(); requestAnimationFrame(loop); })(0);
+
+/* ================= pannello selezione ================= */
+function renderSelPanel(){
+  const box=$('#tabSel');
+  if(!selSet()){ box.innerHTML='<div class="empty">Nessuna selezione.<br><br>Con <b>Seleziona (V)</b> clicca nodi o elementi, oppure traccia una finestra. Tasto destro = orbita, rotella = zoom. I nodi selezionati si trascinano sul piano di lavoro; PagSu/PagGiù li alza o abbassa.</div>'; return; }
+  let h='';
+  if(selNodes.size===1&&selElems.size===0){ const n=nodeById([...selNodes][0]);
+    const g=groupById(n.group);
+    h+=`<div class="sec-h"><h4>NODO ${n.tag}</h4></div>
+    <div class="card"><div class="card-b" style="display:block">
+      <div class="frow"><label>x</label><input type="number" step="any" id="nx" value="${fx(n.x)}"></div>
+      <div class="frow"><label>y</label><input type="number" step="any" id="ny" value="${fx(n.y)}"></div>
+      <div class="frow"><label>z</label><input type="number" step="any" id="nz" value="${fx(n.z)}"></div>
+      <div class="frow"><label>Gruppo</label><select id="ng"><option value="">— nessuno —</option>${App.groups.map(x=>`<option value="${x.id}" ${g&&g.id===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+      <div class="frow"><label>Vincoli</label><span style="font:11px var(--mono)">${n.fix?n.fix.map(v=>v?'●':'○').join(' '):'libero (6 DOF)'}</span></div>
+      <div class="frow"><label>Massa</label><span style="font:11px var(--mono)">${n.mass?n.mass.map(num).join(', '):'—'}</span></div>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button class="mini-btn" data-pf="fix">Vincolo</button>
+        <button class="mini-btn" data-pf="mass">Massa</button>
+        <button class="mini-btn" data-pf="load">Carico</button>
+      </div></div></div>`;
+    setTimeout(()=>{ const bind=(id,fn)=>{const el=$(id);if(el)el.onchange=()=>{commit(snapshot());fn(el.value)}};
+      bind('#nx',v=>n.x=+v||0); bind('#ny',v=>n.y=+v||0); bind('#nz',v=>n.z=+v||0);
+      bind('#ng',v=>n.group=v||null);
+      $$('#tabSel [data-pf]').forEach(b=>b.onclick=()=>openNodePopup(n,b.dataset.pf,innerWidth-340,180));
+    });
+  }
+  else if(selElems.size===1&&selNodes.size===0){ const e=App.elems.find(x=>x.id===[...selElems][0]);
+    const g=groupById(e.group); const miss=g?groupCheck(g):['gruppo mancante'];
+    const ns=nodesOf(e);
+    const TN={beam:'elasticBeamColumn (3D)',truss:'truss',shell:'shellMITC4',brick:'stdBrick',interface:'zeroLength (interfaccia)'};
+    const needMat=['truss','brick','interface'].includes(e.type);
+    h+=`<div class="sec-h"><h4>ELEMENTO ${e.tag}</h4></div>
+    <div class="card"><div class="card-b" style="display:block">
+      <div class="frow"><label>Tipo</label><span style="font:11px var(--mono)">${TN[e.type]||e.type}</span></div>
+      <div class="frow"><label>Nodi</label><span style="font:11px var(--mono)">${ns.map(n=>'N'+n.tag).join(' → ')}</span></div>
+      <div class="frow"><label>Gruppo</label><select id="eg">${App.groups.map(x=>`<option value="${x.id}" ${g&&g.id===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+      ${needMat?`<div class="frow"><label>Materiale</label><select id="em"><option value="">— dal gruppo —</option>${App.mats.filter(m=>e.type==='brick'?isNd(m.type):isUniaxial(m.type)).map(m=>`<option value="${m.tag}" ${e.mat&&e.mat==m.tag?'selected':''}>M${m.tag} ${esc(m.name)}</option>`).join('')}</select></div>`:''}
+      ${miss.length?`<div class="badge warn" style="margin-top:4px">Proprietà mancanti: ${miss.join(', ')}</div>`
+        :`<div class="badge ok" style="margin-top:4px">Proprietà fisiche complete</div>`}
+      </div></div>
+      <p class="note">L'elemento fisico eredita le proprietà dal proprio gruppo (<span style="font-family:var(--mono)">element …</span>). Il materiale può essere scavalcato solo per questo elemento.</p>`;
+    setTimeout(()=>{ const eg=$('#eg'); if(eg)eg.onchange=()=>{commit(snapshot());e.group=eg.value||null};
+      const em=$('#em'); if(em)em.onchange=()=>{commit(snapshot());e.mat=em.value?+em.value:null;
+        log('# E'+e.tag+': materiale '+(em.value?'M'+em.value:'ereditato dal gruppo'),'info')};
+    });
+  }
+  else { h+=`<div class="sec-h"><h4>SELEZIONE</h4></div>
+    <p class="note">${selNodes.size} nodi · ${selElems.size} elementi selezionati</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="mini-btn" id="selDel">Elimina (Canc)</button>
+    <button class="mini-btn" id="selClr">Deseleziona</button>
+    <button class="mini-btn" id="selUp">Alza PagSu</button>
+    <button class="mini-btn" id="selDn">Abbassa PagGiù</button></div>
+    <p class="note">Alza/Abbassa sposta la selezione lungo z di un passo di griglia.</p>`;
+    setTimeout(()=>{ $('#selDel').onclick=deleteSelected;
+      $('#selClr').onclick=()=>{selNodes.clear();selElems.clear();renderSelPanel();};
+      $('#selUp').onclick=()=>shiftSelZ(G.step); $('#selDn').onclick=()=>shiftSelZ(-G.step); });
+  }
+  box.innerHTML=h;
+}
+function shiftSelZ(dz){ if(!selSet())return; commit(snapshot());
+  moveTargets().forEach(n=>n.z+=dz);
+  log('# selezione: Δz = '+num(dz),'info'); renderSelPanel(); }
+function deleteSelected(){ if(!selSet())return; commit(snapshot());
+  log('# eliminazione di '+selSet()+' entità','warn');
+  App.elems=App.elems.filter(e=>!selElems.has(e.id));
+  const used=new Set(); App.elems.forEach(e=>e.nodes.forEach(id=>used.add(id)));
+  App.nodes=App.nodes.filter(n=>!selNodes.has(n.id)||used.has(n.id));
+  App.stages.forEach(s=>s.loads=s.loads.filter(Ld=>nodeById(Ld.node)));
+  selNodes.clear(); selElems.clear(); renderAll(); }
+
+/* ================= pannello gruppi ================= */
+function renderGroupsPanel(){
+  const box=$('#tabGroups');
+  let h=`<div class="sec-h"><h4>GRUPPI FISICI</h4><button class="act" id="addGrp">+ nuovo</button></div>
+  <p class="note" style="padding:0 2px 6px">Il gruppo attivo (bordo ambra) riceve tutto ciò che disegni e ne definisce le proprietà OpenSees 3D.</p>`;
+  App.groups.forEach(g=>{ const miss=groupCheck(g);
+    const cnt={n:App.nodes.filter(n=>n.group===g.id).length,
+      e:App.elems.filter(e=>e.group===g.id).length};
+    h+=`<div class="card ${g._open?'open':''}" data-g="${g.id}">
+      <div class="card-h"><span class="sw" style="background:${g.color}"></span>
+        <span class="nm">${esc(g.name)}</span>
+        <span class="knd">${g.kind}</span><span class="cnt">${cnt.n}n/${cnt.e}e</span>
+        ${miss.length?`<span class="badge warn">!</span>`:''}
+      </div>
+      <div class="card-b">
+        <div class="frow"><label>Nome</label><input data-f="name" value="${esc(g.name)}"></div>
+        <div class="frow"><label>Colore</label><input data-f="color" type="color" value="${g.color}"></div>
+        ${gkindFields(g)}
+        <div class="frow"><label>Disegna qui</label><button class="radio-act ${activeGroupId===g.id?'on':''}" data-f="act">imposta attivo</button></div>
+        <div style="display:flex;gap:6px;margin-top:2px"><button class="mini-btn danger" data-f="del">Elimina gruppo</button></div>
+      </div></div>`;
+  });
+  h+=`<div class="legend">
+    <span><i class="lg-fix"></i>vincolo</span><span><i class="lg-load"></i>carico</span>
+    <span><i class="lg-mass"></i>massa</span><span><i class="lg-ifc"></i>interfaccia zeroLength</span></div>`;
+  box.innerHTML=h;
+  $('#addGrp').onclick=()=>openModal('Nuovo gruppo fisico',
+    `<div class="frow"><label>Nome</label><input id="ngn" value="Gruppo ${App.groups.length+1}"></div>
+     <div class="frow"><label>Tipo</label><select id="ngk">
+       <option value="beam">Trave 3D — elasticBeamColumn</option>
+       <option value="truss">Truss — elementi truss</option>
+       <option value="shell">Shell — shellMITC4</option>
+       <option value="brick">Volume — stdBrick</option>
+       <option value="interface">Interfaccia — zeroLength</option>
+       <option value="node">Solo nodi</option></select></div>
+     <p class="note" id="ngknote"></p>`,
+    [{t:'Annulla'},{t:'Crea',acc:true,fn:()=>{ commit(snapshot());
+      const g=addGroupRaw($('#ngn').value||'Gruppo',$('#ngk').value);
+      activeGroupId=g.id; g._open=true; renderAll();
+      log('# nuovo gruppo "'+g.name+'" ('+g.kind+')','info'); }}]);
+  const kSel=$('#ngk'); if(kSel)kSel.onchange=()=>$('#ngknote').textContent='Comando principale: '+({
+    beam:'element elasticBeamColumn … A E G J Iy Iz transf', truss:'element truss … A mat',
+    shell:'element shellMITC4 … section', brick:'element stdBrick … nDMaterial',
+    interface:'element zeroLength … -mat … -dir 1..6', node:'nodi, vincoli e masse'}[$('#ngk').value]);
+  $$('#tabGroups .card-h').forEach(hd=>hd.onclick=()=>{ const g=groupById(hd.parentElement.dataset.g); g._open=!g._open; renderGroupsPanel(); });
+  $$('#tabGroups [data-f]').forEach(inp=>{ const hnd=()=>{ const card=inp.closest('[data-g]'); const g=groupById(card.dataset.g);
+    const f=inp.dataset.f;
+    if(f==='name'){commit(snapshot());g.name=inp.value;renderCounts();}
+    else if(f==='color'){g.color=inp.value;}
+    else if(f==='act'){activeGroupId=g.id;renderGroupsPanel();}
+    else if(f==='del'){ commit(snapshot());
+      App.elems=App.elems.filter(el=>el.group!==g.id);
+      App.nodes.forEach(n=>{if(n.group===g.id)n.group=null});
+      App.groups=App.groups.filter(x=>x.id!==g.id);
+      App.stages.forEach(s=>{delete s.activeGroups[g.id];delete s.matStage[g.id]});
+      if(activeGroupId===g.id)activeGroupId=App.groups[0]?App.groups[0].id:null;
+      renderAll(); log('# gruppo "'+g.name+'" eliminato','warn'); }
+    else if(f[0]==='d'&&f.length===2&&f!=='del'){ commit(snapshot());
+      const d=+f[1]; const ar=g.props.dirs=g.props.dirs||[];
+      if(inp.checked){ if(!ar.includes(d))ar.push(d); ar.sort((a,b)=>a-b); }
+      else g.props.dirs=ar.filter(x=>x!==d); }
+    else if(inp.tagName==='SELECT'){ commit(snapshot()); g.props[f]=f==='mat'?(inp.value?+inp.value:''):inp.value;
+      if(f==='mat')log('# gruppo "'+g.name+'": materiale → M'+inp.value,'info'); }
+    else { commit(snapshot()); g.props[f]=+inp.value||0; }
+    renderCounts(); };
+    inp.onchange=hnd; if(inp.type==='checkbox'||inp.classList.contains('radio-act'))inp.onclick=hnd; });
+}
+function gkindFields(g){
+  const NUM=(l,f,v)=>`<div class="frow"><label>${l}</label><input data-f="${f}" type="number" step="any" value="${v}"></div>`;
+  const SELM=(l,uni)=>`<div class="frow"><label>${l}</label><select data-f="mat"><option value="">— scegli —</option>${
+    App.mats.filter(m=>uni?isUniaxial(m.type):isNd(m.type)).map(m=>`<option value="${m.tag}" ${g.props.mat==m.tag?'selected':''}>M${m.tag} · ${esc(m.name)}</option>`).join('')}</select></div>`;
+  if(g.kind==='beam')return NUM('A','A',fx(g.props.A))+NUM('E','E',fx(g.props.E))+NUM('G','G',fx(g.props.G))
+    +NUM('J','J',g.props.J)+NUM('Iy','Iy',g.props.Iy)+NUM('Iz','Iz',g.props.Iz)
+    +`<div class="frow"><label>Trasf.</label><select data-f="transf">${['Linear','PDelta','Corotational'].map(t=>`<option ${g.props.transf===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <p class="note">→ <span style="font-family:var(--mono)">element elasticBeamColumn … A E G J Iy Iz transf</span>. Il vecxz della geomTransf (0 0 1 / 0 1 0) viene scelto automaticamente per membri verticali.</p>`;
+  if(g.kind==='truss')return NUM('A','A',fx(g.props.A))+SELM('Materiale','mat',true)
+    +`<p class="note">→ <span style="font-family:var(--mono)">element truss … A mat</span>. ⚠ In un modello <span style="font-family:var(--mono)">-ndf 6</span> OpenSees richiede nodi a 3 DOF per il truss: se l\'analisi segnala incompatibilità, sostituire con travi o verificare la versione.</p>`;
+  if(g.kind==='shell')return NUM('Spessore t','t',fx(g.props.t))+NUM('E','E',fx(g.props.E))+NUM('G','G',fx(g.props.G))
+    +`<p class="note">→ <span style="font-family:var(--mono)">section Elastic</span> generata automaticamente (A = t, I = t³/12) + <span style="font-family:var(--mono)">element shellMITC4 …</span></p>`;
+  if(g.kind==='brick')return SELM('nDMaterial','mat',false)
+    +`<p class="note">→ <span style="font-family:var(--mono)">element stdBrick n1 … n8 mat</span> (8 nodi, ordine fondo 1-4 / cima 5-8)</p>`;
+  if(g.kind==='interface')return SELM('Materiale','mat',true)
+    +`<div class="frow"><label>DOF</label>${[1,2,3,4,5,6].map(d=>`<label style="flex:0 0 auto"><input type="checkbox" data-f="d${d}" ${(g.props.dirs||[]).includes(d)?'checked':''}> ${d}</label>`).join('')}</div>
+    <p class="note">→ <span style="font-family:var(--mono)">element zeroLength … -mat … -dir …</span> (coppie di nodi coincidenti; DOF 4-6 = rotazioni)</p>`;
+  return `<p class="note">Gruppo di soli nodi: utile per nodi di suolo, masse concentrate o appoggi.</p>`;
+}
+
+/* ================= pannello materiali ================= */
+const MATDEFS={
+ Elastic:{l:'Elastic (uniaxial)',f:['E']}, ElasticPP:{l:'ElasticPP (uniaxial)',f:['E','epsY0']},
+ Steel01:{l:'Steel01 (uniaxial)',f:['Fy','E0','b']}, Concrete01:{l:'Concrete01 (uniaxial)',f:['fpc','epsc0','fpcu','epsU']},
+ ElasticIsotropic:{l:'ElasticIsotropic (nD 3D)',f:['E','nu','rho']}};
+function renderMatsPanel(){
+  const box=$('#tabMats');
+  let h=`<div class="sec-h"><h4>MATERIALI</h4><button class="act" id="addMat">+ nuovo</button></div>`;
+  if(!App.mats.length)h+='<div class="empty">Nessun materiale. I gruppi beam e shell usano i propri parametri; truss, brick e interfacce richiedono un materiale.</div>';
+  App.mats.forEach(m=>{ h+=`<div class="card" data-m="${m.tag}">
+    <div class="card-h"><span class="sw" style="background:${m.color}"></span>
+      <span class="nm">M${m.tag} · ${esc(m.name)}</span><span class="knd">${m.type}</span></div>
+    <div class="card-b">
+      <div class="frow"><label>Nome</label><input data-m="name" value="${esc(m.name)}"></div>
+      ${MATDEFS[m.type].f.map(k=>`<div class="frow"><label>${k}</label><input data-m="p:${k}" type="number" step="any" value="${m.params[k]??0}"></div>`).join('')}
+      <div style="display:flex;gap:6px"><button class="mini-btn danger" data-m="del">Elimina</button></div>
+    </div></div>`;
+  });
+  box.innerHTML=h;
+  $('#addMat').onclick=()=>openModal('Nuovo materiale',
+    `<div class="frow"><label>Nome</label><input id="nmn" value="Materiale ${App.mats.length+1}"></div>
+     <div class="frow"><label>Legge</label><select id="nmt">${Object.entries(MATDEFS).map(([k,v])=>`<option value="${k}">${v.l}</option>`).join('')}</select></div>
+     <p class="note" id="nmhint">ElasticIsotropic genera <span style="font-family:var(--mono)">nDMaterial</span> 3D (per brick); le altre generano <span style="font-family:var(--mono)">uniaxialMaterial</span>.</p>`,
+    [{t:'Annulla'},{t:'Crea',acc:true,fn:()=>{ commit(snapshot());
+      const t=$('#nmt').value; const p={}; MATDEFS[t].f.forEach(k=>p[k]=k==='nu'?0.2:(k==='E'||k==='E0'?210000:0));
+      const m=addMatRaw($('#nmn').value||'Materiale',t,p);
+      renderAll(); log(matCmd(m),'info'); }}]);
+  $$('#tabMats [data-m]').forEach(inp=>{ inp.onchange=()=>{ const m=matByTag(inp.closest('[data-m]').dataset.m);
+    commit(snapshot()); const k=inp.dataset.m;
+    if(k==='name')m.name=inp.value; else if(k==='del'){
+      App.mats=App.mats.filter(x=>x!==m);
+      App.groups.forEach(g=>{if(g.props.mat==m.tag)g.props.mat=''});
+      App.elems.forEach(e=>{if(e.mat==m.tag)e.mat=null});
+      log('# materiale M'+m.tag+' eliminato','warn'); renderAll(); }
+    else m.params[k.slice(2)]=+inp.value||0; };});
+}
+function matCmd(m){ const p=m.params;
+  switch(m.type){
+    case 'Elastic':return `uniaxialMaterial Elastic ${m.tag} ${num(p.E)};`;
+    case 'ElasticPP':return `uniaxialMaterial ElasticPP ${m.tag} ${num(p.E)} ${num(p.epsY0)};`;
+    case 'Steel01':return `uniaxialMaterial Steel01 ${m.tag} ${num(p.Fy)} ${num(p.E0)} ${num(p.b)};`;
+    case 'Concrete01':return `uniaxialMaterial Concrete01 ${m.tag} ${num(p.fpc)} ${num(p.epsc0)} ${num(p.fpcu)} ${num(p.epsU)};`;
+    case 'ElasticIsotropic':return `nDMaterial ElasticIsotropic ${m.tag} ${num(p.E)} ${num(p.nu)} ${num(p.rho)};`;
+  } return ''; }
+
+/* ================= pannello parametri ================= */
+function renderParamsPanel(){
+  const box=$('#tabParams');
+  let h=`<div class="sec-h"><h4>PARAMETRI · updateParameter</h4><button class="act" id="addPar">+ nuovo</button></div>
+  <p class="note" style="padding:0 2px 6px">Dichiara le grandezze parametriche (<span style="font-family:var(--mono)">parameter</span> / <span style="font-family:var(--mono)">addToParameter</span>) e in ciascuna fase il valore assunto con <span style="font-family:var(--mono)">updateParameter</span>. Esempi di target: <span style="font-family:var(--mono)">element 3 E</span>, <span style="font-family:var(--mono)">node 2</span>.</p>`;
+  if(!App.params.length)h+='<div class="empty">Nessun parametro definito.</div>';
+  App.params.forEach(p=>{ h+=`<div class="card" data-p="${p.tag}"><div class="card-b" style="display:block">
+    <div class="frow"><label>Tag</label><span style="font:11px var(--mono)">parametro ${p.tag}</span></div>
+    ${p.targets.map((t,i)=>`<div class="frow"><label>${i?'aggiungi a':'Bersaglio'}</label><input data-pt="${i}" value="${esc(t)}"><button class="mini-btn danger" data-px="${i}">×</button></div>`).join('')}
+    <div style="display:flex;gap:6px"><button class="mini-btn" data-padd>+ target</button>
+    <button class="mini-btn danger" data-pdel>Elimina</button></div></div></div>`;
+  });
+  box.innerHTML=h;
+  $('#addPar').onclick=()=>{ commit(snapshot());
+    App.params.push({tag:++App.T.par,targets:['element 1 E']}); renderParamsPanel(); renderStagePanel();
+    log(`parameter ${App.T.par} element 1 E;`,'info'); };
+  $$('#tabParams [data-pt]').forEach(inp=>inp.onchange=()=>{ const p=App.params.find(x=>x.tag==inp.closest('[data-p]').dataset.p);
+    commit(snapshot()); p.targets[+inp.dataset.pt]=inp.value; });
+  $$('#tabParams [data-px]').forEach(b=>b.onclick=()=>{ const p=App.params.find(x=>x.tag==b.closest('[data-p]').dataset.p);
+    commit(snapshot()); if(p.targets.length>1){p.targets.splice(+b.dataset.px,1);renderParamsPanel();} });
+  $$('#tabParams [data-padd]').forEach(b=>b.onclick=()=>{ const p=App.params.find(x=>x.tag==b.closest('[data-p]').dataset.p);
+    commit(snapshot()); p.targets.push(''); renderParamsPanel(); log(`addToParameter ${p.tag} …`,'info'); });
+  $$('#tabParams [data-pdel]').forEach(b=>b.onclick=()=>{ commit(snapshot());
+    const tag=+b.closest('[data-p]').dataset.p; App.params=App.params.filter(x=>x.tag!==tag);
+    renderParamsPanel(); renderStagePanel(); });
+}
+
+/* ================= pannello fase ================= */
+function renderStagePanel(){
+  const box=$('#tabStage'), st=curStageObj(); if(!st){box.innerHTML='';return;}
+  const s=st.solver;
+  const SEL=(id,opts,cur)=>`<select data-s="${id}">${opts.map(o=>`<option ${cur==o?'selected':''}>${o}</option>`).join('')}</select>`;
+  const NUM=(id,v,stp)=>`<input data-s="${id}" type="number" step="${stp||'any'}" value="${v}">`;
+  let h=`<div class="sec-h"><h4>FASE ${curStage+1}</h4>
+    <span><button class="act" id="dupSt">duplica</button> · <button class="act" id="delSt" style="color:#e08078">elimina</button></span></div>
+  <div class="card"><div class="card-b" style="display:block">
+    <div class="frow"><label>Nome</label><input data-st="name" value="${esc(st.name)}"></div>
+    <div class="frow"><label>Analisi</label><select data-st="mode">${[['static','Statica'],['transient','Transiente (dinamica)'],['modal','Modale (eigen)']].map(([v,l])=>`<option value="${v}" ${st.mode===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    ${st.mode==='static'?`<div class="frow"><label>Step analyze</label>${NUM('steps',st.steps,1)}</div>`:''}
+    ${st.mode==='transient'?`<div class="frow"><label>Step × dt</label>${NUM('steps',st.steps,1)} ${NUM('dt',s.dt)}</div>`:''}
+    ${st.mode==='modal'?`<div class="frow"><label>Numero modi</label>${NUM('eigenN',st.eigenN,1)}</div>`:''}
+  </div></div>`;
+  if(st.mode!=='modal'){
+    h+=`<div class="sec-h"><h4>PACCHETTO SOLUTORI</h4></div>
+    <div class="card"><div class="card-b" style="display:block">
+      <div class="frow"><label>constraints</label>${SEL('constraints',['Plain','Penalty','Lagrange','Transformation'],s.constraints)}</div>
+      <div class="frow"><label>numberer</label>${SEL('numberer',['RCM','AMD','Plain'],s.numberer)}</div>
+      <div class="frow"><label>system</label>${SEL('system',['BandGeneral','BandSPD','SparseGeneral','SparseSPD','UmfPack','SuperLU'],s.system)}</div>
+      <div class="frow"><label>algorithm</label>${SEL('algorithm',['Linear','Newton','ModifiedNewton','NewtonLineSearch','KrylovNewton','BFGS'],s.algorithm)}</div>
+      <div class="frow"><label>test</label>${SEL('test',['NormDispIncr','NormUnbalance','EnergyIncr','RelativeNormDispIncr'],s.test)} ${NUM('testTol',s.testTol)} ${NUM('testIter',s.testIter,1)}</div>
+      ${st.mode==='static'?`<div class="frow"><label>integrator</label>${SEL('integrator',['LoadControl','DisplacementControl','ArcLength'],s.integrator)}</div>
+        ${s.integrator==='LoadControl'?`<div class="frow"><label>Δλ</label>${NUM('incr',s.incr)}</div>`:''}
+        ${s.integrator==='DisplacementControl'?`<div class="frow"><label>nodo / dof / Δ</label>${NUM('dcNode',s.dcNode,1)} ${NUM('dcDof',s.dcDof,1)} ${NUM('dcIncr',s.dcIncr)}</div>`:''}
+        ${s.integrator==='ArcLength'?`<div class="frow"><label>s / Δs</label>${NUM('alS',s.alS)} ${NUM('alIncr',s.alIncr)}</div>`:''}`:''}
+      ${st.mode==='transient'?`<div class="frow"><label>integrator</label>${SEL('integrator',['Newmark','HHT'],s.integrator)}</div>
+        ${s.integrator==='Newmark'?`<div class="frow"><label>γ / β</label>${NUM('gamma',s.gamma)} ${NUM('beta',s.beta)}</div>`:''}
+        ${s.integrator==='HHT'?`<div class="frow"><label>α</label>${NUM('alpha',s.alpha)}</div>`:''}`:''}
+    </div></div>`;
+  }
+  if(st.mode==='transient'){
+    h+=`<div class="sec-h"><h4>ESCITAZIONE (UniformExcitation)</h4></div>
+    <div class="card"><div class="card-b" style="display:block">
+      <label class="chk"><input type="checkbox" data-st="excOn" ${st.exc.on?'checked':''}> attiva sismica uniforme</label>
+      <div class="frow"><label>dof</label>${SEL('excDir',[1,2,3],st.exc.dir)}</div>
+      <div class="frow"><label>serie</label>${SEL('excSeries',['Constant','Path','Sine'],st.exc.series)}</div>
+      <div class="frow"><label>factor</label>${NUM('excFactor',st.exc.factor)}</div>
+      ${st.exc.series==='Path'?`<div class="frow"><label>file / dt</label><input data-s="excFile" value="${esc(st.exc.file)}" placeholder="accel.txt"> ${NUM('excDt',st.exc.dt)}</div>`:''}
+      ${st.exc.series==='Sine'?`<div class="frow"><label>Tstart / T / shift</label>${NUM('excT0',st.exc.tStart)} ${NUM('excPer',st.exc.period)} ${NUM('excShift',st.exc.shift)}</div>`:''}
+    </div></div>`;
+  }
+  h+=`<div class="sec-h"><h4>GRUPPI ATTIVI IN FASE</h4></div>
+  <div class="card"><div class="card-b" style="display:block">`;
+  App.groups.forEach(g=>{ const cnt=App.elems.filter(e=>e.group===g.id).length;
+    h+=`<label class="chk"><input type="checkbox" data-ag="${g.id}" ${st.activeGroups[g.id]!==false?'checked':''}>
+      <span class="sw" style="background:${g.color}"></span> ${esc(g.name)} <span class="cnt">${cnt} elem</span></label>`; });
+  h+=`</div></div>`;
+  h+=`<div class="sec-h"><h4>UPDATE MATERIAL STAGE</h4></div>
+  <div class="card"><div class="card-b" style="display:block">
+    <p class="note" style="padding-top:0">Genera <span style="font-family:var(--mono)">updateMaterialStage -material X -stage 1</span> in questa fase per i gruppi con materiale.</p>`;
+  App.groups.filter(g=>matByTag(g.props.mat)).forEach(g=>{
+    h+=`<label class="chk"><input type="checkbox" data-ms="${g.id}" ${st.matStage[g.id]?'checked':''}>
+      <span class="sw" style="background:${g.color}"></span> ${esc(g.name)} → M${g.props.mat}</label>`; });
+  if(!App.groups.some(g=>matByTag(g.props.mat)))h+='<p class="note">Nessun gruppo con materiale assegnato.</p>';
+  h+=`</div></div>`;
+  if(App.params.length){
+    h+=`<div class="sec-h"><h4>UPDATE PARAMETER</h4></div><div class="card"><div class="card-b" style="display:block">`;
+    App.params.forEach(p=>{ h+=`<div class="frow"><label>param ${p.tag}</label><input data-up="${p.tag}" type="number" step="any" placeholder="invariato" value="${st.updParams[p.tag]??''}"></div>`; });
+    h+=`</div></div>`;
+  }
+  h+=`<div class="sec-h"><h4>RECORDER</h4></div><div class="card"><div class="card-b" style="display:block">
+    <label class="chk"><input type="checkbox" data-st="recNodes" ${st.recNodes?'checked':''}> spostamenti nodali dof 1-3 (.out)</label>
+    <label class="chk"><input type="checkbox" data-st="recEles" ${st.recEles?'checked':''}> forze elementi globalForce (.out)</label></div></div>`;
+  h+=`<div class="sec-h"><h4>TCL PERSONALIZZATO</h4></div>
+  <textarea data-st="custom" rows="4" placeholder="comandi Tcl extra per questa fase…">${esc(st.custom)}</textarea>
+  <p class="note">I carichi nodali della fase si assegnano dal viewport con lo strumento <b>Carico (D)</b>: ${st.loads.length? st.loads.length+' carico/i presenti.':'nessuno.'}</p>`;
+  box.innerHTML=h;
+
+  box.querySelector('[data-st="name"]').onchange=e=>{commit(snapshot());st.name=e.target.value;renderStagebar();};
+  box.querySelector('[data-st="mode"]').onchange=e=>{commit(snapshot());st.mode=e.target.value;renderStagebar();renderStagePanel();};
+  box.querySelectorAll('[data-s]').forEach(inp=>inp.onchange=()=>{ commit(snapshot()); const k=inp.dataset.s;
+    if(k==='steps')st.steps=+inp.value||1;
+    else if(k==='eigenN')st.eigenN=clamp(+inp.value||1,1,60);
+    else if(k==='excDir')st.exc.dir=+inp.value;
+    else if(k==='excSeries'){st.exc.series=inp.value;renderStagePanel();}
+    else if(k==='excFile')st.exc.file=inp.value;
+    else if(k==='excT0')st.exc.tStart=+inp.value||0;
+    else if(k==='excPer')st.exc.period=+inp.value||1;
+    else if(k==='excShift')st.exc.shift=+inp.value||0;
+    else if(k==='excFactor')st.exc.factor=+inp.value||1;
+    else if(k==='excDt')st.exc.dt=+inp.value||0.01;
+    else s[k]=inp.type==='number'?(+inp.value||0):inp.value; });
+  box.querySelectorAll('[data-st]').forEach(inp=>{ if(inp.dataset.st==='name'||inp.dataset.st==='mode')return;
+    inp.onchange=()=>{ commit(snapshot()); const k=inp.dataset.st;
+      if(k==='custom')st.custom=inp.value;
+      else if(k==='recNodes'||k==='recEles')st[k]=inp.checked;
+      else if(k==='excOn')st.exc.on=inp.checked; }; });
+  box.querySelectorAll('[data-ag]').forEach(inp=>inp.onchange=()=>{ commit(snapshot());
+    st.activeGroups[inp.dataset.ag]=inp.checked; updateFades();
+    log('# fase "'+st.name+'": gruppo '+(groupById(inp.dataset.ag)||{}).name+(inp.checked?' attivato':' disattivato'),'info'); });
+  box.querySelectorAll('[data-ms]').forEach(inp=>inp.onchange=()=>{ commit(snapshot());
+    st.matStage[inp.dataset.ms]=inp.checked;
+    if(inp.checked){ const g=groupById(inp.dataset.ms);
+      log(`updateMaterialStage -material ${g.props.mat} -stage 1;`,'info'); } });
+  box.querySelectorAll('[data-up]').forEach(inp=>inp.onchange=()=>{ commit(snapshot());
+    const tag=+inp.dataset.up;
+    if(inp.value==='')delete st.updParams[tag]; else st.updParams[tag]=+inp.value;
+    log(`updateParameter ${tag} ${st.updParams[tag]};`,'info'); });
+  const dup=box.querySelector('#dupSt'); if(dup)dup.onclick=()=>{ commit(snapshot());
+    const c=JSON.parse(JSON.stringify(st)); c.id=uid(); c.name=st.name+' (copia)';
+    App.stages.splice(curStage+1,0,c); curStage++; updateFades(); renderAll(); toast('Fase duplicata'); };
+  const del=box.querySelector('#delSt'); if(del)del.onclick=()=>{ if(App.stages.length<=1)return toast('Serve almeno una fase');
+    commit(snapshot()); App.stages.splice(curStage,1); curStage=Math.max(0,curStage-1); updateFades(); renderAll(); };
+}
+ $('#btnAddStage').onclick=()=>{ commit(snapshot()); addStage('Fase '+(App.stages.length+1));
+  curStage=App.stages.length-1; updateFades(); renderAll(); toast('Nuova fase creata'); };
+
+/* ================= timeline fasi ================= */
+function renderStagebar(){ const b=$('#stagebar');
+  b.innerHTML=App.stages.map((s,i)=>`<button class="stage-chip ${i===curStage?'on':''}" data-i="${i}">
+    <span class="n">${String(i+1).padStart(2,'0')}</span><span class="nm">${esc(s.name)}</span>
+    <span class="md">${{static:'static · '+s.steps+' step',transient:'transient · '+s.steps+'×'+num(s.solver.dt)+'s',modal:'eigen '+s.eigenN}[s.mode]}</span></button>`).join('');
+  b.querySelectorAll('.stage-chip').forEach(c=>c.onclick=()=>setStage(+c.dataset.i)); }
+function setStage(i){ curStage=i; pend=[]; op=null; updateFades(); renderStagebar(); renderStagePanel();
+  log('# ── fase corrente: "'+curStageObj().name+'" ──','hdr'); }
+function renderCounts(){ if($('#tabGroups').classList.contains('on'))renderGroupsPanel(); renderStagebar(); }
+
+/* ================= generatore Tcl 3D ================= */
+function buildTcl(){
+  const L=[], p=s=>L.push(s);
+  p('# ════════════════════════════════════════════════════════════');
+  p('#  OSCAD Studio 3D — modello OpenSees generato dall\'ambiente CAD');
+  p('#  '+new Date().toLocaleString('it-IT'));
+  p('#  modello tridimensionale: 3 traslazioni + 3 rotazioni per nodo');
+  p('# ════════════════════════════════════════════════════════════');
+  p('wipe;');
+  p('model basicBuilder -ndm 3 -ndf 6;');
+  p('');
+  if(App.mats.length){ p('# ─── materiali ───'); App.mats.forEach(m=>p(matCmd(m))); p(''); }
+  const hasShell=App.groups.some(g=>g.kind==='shell');
+  if(hasShell){ p('# ─── sezioni elastiche per gli elementi shell ───');
+    App.groups.forEach((g,i)=>{ if(g.kind!=='shell')return; const t=Math.max(g.props.t||0.25,1e-6);
+      p(`section Elastic ${100+i+1} ${num(g.props.E||30000)} ${num(g.props.G||13000)} ${num(t)} ${num(t*t*t/12)} ${num(t*t*t/12)} ${num(t*t*t/6)};  # ${g.name}`); });
+    p(''); }
+  const usedT=new Set();
+  App.elems.forEach(e=>{ if(e.type==='beam'&&nodesOf(e).length>1)usedT.add(beamTT(e)); });
+  if(usedT.size){ p('# ─── geomTransf (vecxz 0 0 1 per membri orizzontali, 0 1 0 per verticali) ───');
+    Object.entries(TRBASE).forEach(([ty,b])=>{ [0,1].forEach(v=>{ if(usedT.has(b+v))p(`geomTransf ${ty} ${b+v} ${v?'0 1 0':'0 0 1'};`); }); });
+    p(''); }
+  p('# ─── nodi (ordine di definizione = numerazione OpenSees) ───');
+  [...App.nodes].sort((a,b)=>a.tag-b.tag).forEach(n=>p(`node ${n.tag} ${num(n.x)} ${num(n.y)} ${num(n.z)};`));
+  p('');
+  const fixed=App.nodes.filter(n=>n.fix), mass=App.nodes.filter(n=>n.mass);
+  if(fixed.length){ p('# ─── condizioni al contorno (ux uy uz rx ry rz) ───');
+    fixed.forEach(n=>p(`fix ${n.tag} ${n.fix.join(' ')};`)); p(''); }
+  if(mass.length){ p('# ─── masse nodali ───');
+    mass.forEach(n=>p(`mass ${n.tag} ${n.mass.map(num).join(' ')};`)); p(''); }
+  p('# ─── elementi ───');
+  [...App.elems].sort((a,b)=>a.tag-b.tag).forEach(e=>p(elemCmd(e)));
+  p('');
+  if(App.params.length){ p('# ─── parametri del modello ───');
+    App.params.forEach(pr=>pr.targets.forEach((t,i)=>p((i?`addToParameter ${pr.tag} `:`parameter ${pr.tag} `)+t+';'))); p(''); }
+  App.stages.forEach((st,i)=>{
+    p('# ════════════ FASE '+(i+1)+': '+st.name+' ════════════');
+    if(i>0)p('loadConst -time 0.0;  # reset orologio tra le fasi');
+    if(st.custom.trim())p(st.custom.trim());
+    Object.entries(st.updParams).forEach(([tag,v])=>p(`updateParameter ${tag} ${num(v)};`));
+    App.groups.forEach(g=>{ if(st.matStage[g.id]&&matByTag(g.props.mat))
+      p(`updateMaterialStage -material ${g.props.mat} -stage 1;`); });
+    if(st.recNodes&&App.nodes.length)p(`recorder Node -file out/fase${i+1}_disp.out -time -node ${App.nodes.map(n=>n.tag).join(' ')} -dof 1 2 3 disp;`);
+    if(st.recEles&&App.elems.length)p(`recorder Element -file out/fase${i+1}_force.out -time -ele ${App.elems.map(e=>e.tag).join(' ')} globalForce;`);
+    const loads=st.loads.filter(Ld=>nodeById(Ld.node));
+    if(st.mode!=='modal'){
+      if(loads.length){ p(`pattern Plain ${i+1} Linear {`);
+        loads.forEach(Ld=>{ const n=nodeById(Ld.node);
+          p(`  load ${n.tag} ${num(Ld.fx)} ${num(Ld.fy)} ${num(Ld.fz)} ${num(Ld.mx||0)} ${num(Ld.my||0)} ${num(Ld.mz||0)};`); });
+        p('}'); }
+      if(st.mode==='transient'&&st.exc.on){
+        p(`timeSeries ${st.exc.series} ${i+1} `+(st.exc.series==='Constant'?`-factor ${num(st.exc.factor)}`:
+          st.exc.series==='Path'?`-filePath ${st.exc.file||'accel.txt'} -dt ${num(st.exc.dt)} -factor ${num(st.exc.factor)}`:
+          `${num(st.exc.tStart)} ${num(st.exc.period)} ${num(st.exc.shift)} -factor ${num(st.exc.factor)}`)+';');
+        p(`pattern UniformExcitation ${i+1} ${st.exc.dir} -accel ${i+1};`); }
+      const s=st.solver;
+      p(`constraints ${s.constraints};`);
+      p(`numberer ${s.numberer};`);
+      p(`system ${s.system};`);
+      p(`test ${s.test} ${s.testTol} ${s.testIter} 0;`);
+      p(`algorithm ${s.algorithm};`);
+      if(st.mode==='static'){
+        p(s.integrator==='LoadControl'?`integrator LoadControl ${num(s.incr)};`:
+          s.integrator==='DisplacementControl'?`integrator DisplacementControl ${s.dcNode} ${s.dcDof} ${num(s.dcIncr)};`:
+          `integrator ArcLength ${num(s.alS)} ${num(s.alIncr)};`);
+        p('analysis Static;');
+        p(`analyze ${st.steps};`);
+      } else {
+        p(s.integrator==='Newmark'?`integrator Newmark ${num(s.gamma)} ${num(s.beta)};`:`integrator HHT ${num(s.alpha)};`);
+        p('analysis Transient;');
+        p(`analyze ${st.steps} ${num(s.dt)};`);
+      }
+    } else {
+      p('set pi 3.14159265;');
+      p(`set lambdaN [eigen ${st.eigenN}];`);
+      p('puts "── analisi modale ──";');
+      p('for {set k 0} {$k < '+st.eigenN+'} {incr k} {');
+      p('  set lam [lindex $lambdaN $k];');
+      p('  if {$lam <= 0} { continue }');
+      p('  set T [expr 2.0*$pi/sqrt($lam)];');
+      p('  puts [format "modo %d: T = %.4f s" [expr $k+1] $T];');
+      p('}');
+    }
+    p('');
+  });
+  p('puts "Analisi completata."; wipe;');
+  return L.join('\n');
+}
+function download(name,text,type){ const b=new Blob([text],{type:type||'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+ $('#btnExport').onclick=()=>{ download('oscad_model_3d.tcl',buildTcl()); toast('oscad_model_3d.tcl scaricato'); };
+ $('#btnCopyTcl').onclick=()=>openScriptModal();
+ $('#btnScript').onclick=()=>openScriptModal();
+function openScriptModal(){ openModal('SCRIPT TCL GENERATO (ndm 3 · ndf 6)',
+  `<textarea id="tclOut" spellcheck="false">${esc(buildTcl())}</textarea>`,
+  [{t:'Chiudi'},{t:'Copia',fn:()=>{navigator.clipboard.writeText($('#tclOut').value);toast('Script copiato');return false;},close:false},
+   {t:'Scarica .tcl',acc:true,fn:()=>download('oscad_model_3d.tcl',$('#tclOut').value)}]); }
+
+/* ================= file json ================= */
+ $('#btnNew').onclick=()=>openModal('Nuovo modello','<p class="note">Il modello corrente verrà cancellato. Procedere?</p>',
+  [{t:'Annulla'},{t:'Sì, nuovo modello',acc:true,fn:()=>{ undoStack=[];redoStack=[]; seed(); renderAll(); fitView(); toast('Nuovo modello vuoto pronto'); }}]);
+ $('#btnOpen').onclick=()=>$('#fileInput').click();
+ $('#fileInput').onchange=e=>{ const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{ try{ const o=JSON.parse(r.result);
+    ['nodes','elems','groups','mats','stages','params'].forEach(k=>o[k]=o[k]||[]);
+    undoStack=[];redoStack=[];
+    apply(JSON.stringify(o));
+    if(o.wp){wp.z=o.wp.z||0;syncWp();}
+    fitView(); toast('Progetto caricato');
+  }catch(err){toast('File non valido')} }; r.readAsText(f); e.target.value=''; };
+function saveJson(){ const o={nodes:App.nodes,elems:App.elems,
+  groups:App.groups.map(g=>{const{fade,fadeT,...rest}=g;return rest}),
+  mats:App.mats,stages:App.stages,params:App.params,T:App.T,wp:{z:wp.z}};
+  download('oscad_project.json',JSON.stringify(o,null,1),'application/json'); toast('Progetto salvato'); }
+
+/* ================= toolbar & toggles ================= */
+const TOOLS=[
+ {t:'select',i:'select',k:'V'},{s:1},
+ {t:'node',i:'node',k:'N'},{t:'beam',i:'beam',k:'L'},{t:'poly',i:'poly',k:'P'},
+ {t:'shell',i:'quad',k:'Q'},{t:'box',i:'cube',k:'G'},{t:'interface',i:'interface',k:'I'},{s:1},
+ {t:'fix',i:'fix',k:'F'},{t:'mass',i:'mass',k:'X'},{t:'load',i:'load',k:'D'},{s:1},
+ {t:'move',i:'move',k:'M'},{t:'copy',i:'copy',k:'C'},{t:'rotate',i:'rotate',k:'R'}];
+const TIP={select:'Seleziona / sposta',node:'Nodo 3D',beam:'Trave 3D',poly:'Polilinea di travi',
+ shell:'Elemento shell',box:'Maglia brick / shell',interface:'Interfaccia zeroLength',
+ fix:'Vincoli nodo (6 DOF)',mass:'Massa nodale',load:'Carico nodale',
+ move:'Sposta selezione',copy:'Copia selezione',rotate:'Ruota attorno a Z'};
+(function buildTools(){ const c=$('#tools');
+  TOOLS.forEach(t=>{ if(t.s){c.insertAdjacentHTML('beforeend','<div class="tl-sep"></div>');return;}
+    const b=document.createElement('button'); b.className='tool'+(t.t==='select'?' on':''); b.dataset.t=t.t; b.title=TIP[t.t]+' ('+t.k+')';
+    b.innerHTML=ic(t.i)+'<span class="kb">'+t.k+'</span>'; b.onclick=()=>setTool(t.t); c.appendChild(b); }); })();
+
+const tg=(id,fn)=>{ $(id).onclick=()=>{$(id).classList.toggle('on');fn($(id).classList.contains('on'))}; };
+tg('#tgNodes',v=>showNodeTags=v); tg('#tgElems',v=>showElemTags=v); tg('#tgSym',v=>showSymbols=v);
+tg('#tgGrid',v=>snapGridOn=v); tg('#tgSnap',v=>snapNodeOn=v); tg('#tgOrtho',v=>orthoOn=v);
+ $('#selColorBy').onchange=e=>colorBy=e.target.value;
+ $('#btnUndo').onclick=doUndo; $('#btnRedo').onclick=doRedo;
+ $('#btnFit').onclick=()=>fitView();
+ $('#wpz').onchange=e=>{ wp.z=+e.target.value||0; };
+ $$('.vp[data-vw]').forEach(b=>b.onclick=()=>{ const v=VIEWS[b.dataset.vw];
+  tweenView({th:v.th,ph:v.ph,dist:cam.dist,tgt:{...cam.tgt}}); });
+ $('#btnRenumber').onclick=()=>{ if(!App.nodes.length)return; commit(snapshot());
+  const sorted=[...App.nodes].sort((a,b)=>(a.z-b.z)||(a.y-b.y)||(a.x-b.x));
+  sorted.forEach((n,i)=>n.tag=i+1);
+  log('# nodi rinumerati per livelli di quota (z, poi y, poi x)','info');
+  renderAll(); toast('Nodi rinumerati'); };
+
+ $$('#tabbar button').forEach(b=>b.onclick=()=>{ $$('#tabbar button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); $$('.tabc').forEach(c=>c.classList.remove('on')); $('#'+b.dataset.tab).classList.add('on');
+  if(b.dataset.tab==='tabStage')renderStagePanel(); });
+function renderAll(){ renderSelPanel(); renderGroupsPanel(); renderMatsPanel(); renderParamsPanel(); renderStagebar(); renderStagePanel(); syncHist(); }
+
+/* ================= guida ================= */
+ $('#btnHelp').onclick=()=>openModal('GUIDA RAPIDA — OSCAD 3D',
+ `<div class="note">
+  <p><b>Vista</b> — tasto destro: orbita · rotella: zoom sul punto sotto il cursore · Maiusc+destro o tasto centrale: pan · pulsanti ISO / TOP / FRONT / LATO nella barra di stato · «Inquadra» centra il modello.</p>
+  <p><b>Piano di lavoro</b> — si disegna sul piano orizzontale di quota z (campo «piano z» nella barra di stato; tasti <span style="font-family:var(--mono)">,</span> e <span style="font-family:var(--mono)">.</span> scendono/salgono di un passo griglia). La vista TOP trasforma il viewport in una tavola da disegno 2D classica (x a destra, y in alto).</p>
+  <p><b>Quota 3D</b> — seleziona e premi <span style="font-family:var(--mono)">PagSu / PagGiù</span> per alzare/abbassare la selezione; durante sposta/copia (dopo il punto base) regolano il Δz prima del secondo clic. Per una colonna verticale: disegna il nodo base, cambia quota del piano e riclicca sullo stesso nodo (snap attivo).</p>
+  <p><b>Scorciatoie</b> — V seleziona · N nodo · L trave · P polilinea · Q shell · G maglia brick/shell · I interfaccia · F vincolo · X massa · D carico · M sposta · C copia · R ruota · Canc elimina · Esc annulla l'operazione · INVIO chiude le polilinee · Ctrl+Z / Ctrl+Y annulla/ripeti · Ctrl+S salva il progetto .json.</p>
+  <p><b>Fasi</b> — ogni fase attiva/disattiva gruppi (il viewport li dissolve), applica <span style="font-family:var(--mono)">updateParameter</span> e <span style="font-family:var(--mono)">updateMaterialStage</span>, sceglie il pacchetto solutori ed esegue analisi statica, transiente (con UniformExcitation) o modale.</p>
+ </div>`,[{t:'Chiudi'}]);
+
+/* ================= tastiera ================= */
+document.addEventListener('keydown',e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
+  if(e.key==='PageUp'||e.key==='PageDown'){ e.preventDefault();
+    const dz=(e.key==='PageUp'?1:-1)*G.step;
+    if(op&&op.kind==='ghost2'){ op.dz=(op.dz||0)+dz; return; }
+    shiftSelZ(dz); return; }
+  if(e.key===','){ wp.z=+(wp.z-G.step).toFixed(6); syncWp(); return; }
+  if(e.key==='.'){ wp.z=+(wp.z+G.step).toFixed(6); syncWp(); return; }
+  if(e.key==='?'){ $('#btnHelp').click(); return; }
+  const k=e.key.toLowerCase();
+  if(e.ctrlKey&&k==='z'){e.preventDefault();doUndo();return;}
+  if(e.ctrlKey&&k==='y'){e.preventDefault();doRedo();return;}
+  if(e.ctrlKey&&k==='s'){e.preventDefault();saveJson();return;}
+  const map={v:'select',n:'node',l:'beam',p:'poly',q:'shell',g:'box',i:'interface',f:'fix',x:'mass',d:'load',m:'move',c:'copy',r:'rotate'};
+  if(map[k]){setTool(map[k]);return;}
+  if(k==='escape'){pend=[];op=null;closePop();$('#modalWrap').style.display='none';return;}
+  if(k==='enter'){if(tool==='poly')finishPoly(false);return;}
+  if(k==='delete'||k==='backspace'){deleteSelected();return;}
+});
+
+/* ================= modello demo iniziale ================= */
+function seed(){
+  App.nodes=[];App.elems=[];App.groups=[];App.mats=[];App.stages=[];App.params=[];
+  App.T={node:0,ele:0,mat:0,par:0}; palIdx=2; matIdx=0; activeGroupId=null;
+  addStage('Gravità');
+  const gCol=addGroupRaw('Colonne HEA200','beam',{A:0.00538,E:210000,G:81000,J:4.9e-5,Iy:1.97e-5,Iz:6.43e-5,transf:'Linear'});
+  const gTrv=addGroupRaw('Travi impalcato','beam',{A:0.00643,E:210000,G:81000,J:1.83e-5,Iy:3.24e-5,Iz:1.07e-4,transf:'Linear'});
+  const gBlk=addGroupRaw('Blocco fondazione','brick',{});
+  const mNd=addMatRaw('Calcestruzzo 3D','ElasticIsotropic',{E:30000,nu:0.2,rho:0}); gBlk.props.mat=mNd.tag;
+  const gIf=addGroupRaw('Interfaccia suolo','interface',{});
+  const mIf=addMatRaw('Contatto ElasticPP','ElasticPP',{E:50000,epsY0:0.002}); gIf.props.mat=mIf.tag;
+  // telaio spaziale 4×4 m, altezza 3.2 m
+  const pts=[[0,0],[4,0],[4,3],[0,3]];
+  const base=pts.map(([x,y])=>{ const n=addNode(x,y,0,gCol.id,true); n.fix=[1,1,1,1,1,1]; return n; });
+  const top=pts.map(([x,y])=>addNode(x,y,3.2,gCol.id,true));
+  for(let i=0;i<4;i++)addElem('beam',[base[i].id,top[i].id],gCol.id,null,true);
+  for(let i=0;i<4;i++)addElem('beam',[top[i].id,top[(i+1)%4].id],gTrv.id,null,true);
+  const st0=App.stages[0];
+  top.forEach(n=>st0.loads.push({node:n.id,fx:0,fy:0,fz:-60,mx:0,my:0,mz:0}));
+  st0.loads.push({node:top[1].id,fx:40,fy:0,fz:0,mx:0,my:0,mz:0});
+  // blocco di brick su interfaccia elastica (nodi di suolo fissi + zeroLength)
+  const nx=2,ny=2,nz=1, bx0=6,by0=0.4,bx1=8.4,by1=2.4,bz0=0,bz1=1;
+  const ids=[];
+  for(let k=0;k<=nz;k++)for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)
+    ids.push(addNode(bx0+i*(bx1-bx0)/nx, by0+j*(by1-by0)/ny, bz0+k*(bz1-bz0)/nz, gBlk.id,true).id);
+  const idx=(i,j,k)=>ids[k*(nx+1)*(ny+1)+j*(nx+1)+i];
+  for(let k=0;k<nz;k++)for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)
+    addElem('brick',[idx(i,j,k),idx(i+1,j,k),idx(i+1,j+1,k),idx(i,j+1,k),
+                     idx(i,j,k+1),idx(i+1,j,k+1),idx(i+1,j+1,k+1),idx(i,j+1,k+1)],gBlk.id,null,true);
+  [[0,0],[nx,0],[0,ny],[nx,ny]].forEach(([i,j])=>{
+    const bn=nodeById(idx(i,j,0));
+    const gn=addNode(bn.x,bn.y,0,gIf.id,true); gn.fix=[1,1,1,1,1,1];
+    addElem('interface',[gn.id,bn.id],gIf.id,null,true); });
+  addStage('Analisi modale'); App.stages[1].mode='modal';
+  App.stages.forEach(s=>App.groups.forEach(g=>s.activeGroups[g.id]=true));
+  activeGroupId=gTrv.id;
+  log('# ── modello demo 3D: telaio spaziale + blocco brick su interfaccia ──','hdr');
+  log('model basicBuilder -ndm 3 -ndf 6;','cmd');
+  log('# ogni azione nel viewport registra qui il comando Tcl equivalente','info');
+  log('# tasto destro = orbita · vista TOP = tavola 2D · ? = guida','info');
+}
+
+/* ================= avvio ================= */
+resize(); seed(); updateFades(true); renderAll(); syncWp();
+requestAnimationFrame(()=>fitView());
+setTool('select');
+</script>
+</body>
+</html>
